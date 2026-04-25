@@ -254,3 +254,7 @@ echo '{...}' > hosts/$(hostname -s)/override/tools/claude-code/settings.json
 ## License
 
 MIT License - 详见 [LICENSE](LICENSE)
+
+## 更新日期
+
+最后更新：2026-04-25
