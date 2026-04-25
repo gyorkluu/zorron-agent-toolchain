@@ -1,0 +1,450 @@
+#!/usr/bin/env bash
+# ============================================================================
+# Zorron Agent Toolchain - 命令行助手
+# ============================================================================
+# 用法: ./scripts/zorron <命令> [参数]
+#
+# 命令:
+#   add skill <名称>          创建新的 Skill 模板
+#   add mcp <名称>            添加 MCP 服务条目
+#   add tool <名称>           创建新工具配置模板
+#   init                      初始化本地覆盖和密钥示例
+#   list                      列出已配置的工具、Skills、MCP 服务
+#   deploy                    运行 install.sh
+#   status                    显示当前部署状态
+#   backup [list|restore]     管理备份
+# ============================================================================
+
+set -euo pipefail
+
+# ---- 初始化 ----
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export ZORRON_ROOT="${ZORRON_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+source "${ZORRON_ROOT}/scripts/lib.sh"
+source "${ZORRON_ROOT}/scripts/backup.sh"
+
+# ---- 帮助 ----
+show_help() {
+    cat <<EOF
+${C_BOLD}zorron${C_RESET} - Zorron Agent Toolchain 管理助手
+
+${C_BOLD}用法:${C_RESET}
+  zorron <命令> [参数]
+
+${C_BOLD}命令:${C_RESET}
+  ${C_GREEN}add${C_RESET}
+    add skill <名称>          创建新的 Skill 模板
+    add mcp <名称>            添加 MCP 服务条目
+    add tool <名称>           创建新工具配置模板
+
+  ${C_GREEN}init${C_RESET}                        初始化本地覆盖和密钥示例
+  ${C_GREEN}list${C_RESET}                        列出已配置的工具、Skills、MCP 服务
+  ${C_GREEN}deploy${C_RESET}                      运行 install.sh 部署配置
+  ${C_GREEN}status${C_RESET}                      显示当前部署状态
+  ${C_GREEN}backup${C_RESET} [list|restore <路径>] 管理备份
+
+${C_BOLD}示例:${C_RESET}
+  zorron add skill pdf-reader     # 创建 pdf-reader Skill
+  zorron add mcp filesystem       # 添加 filesystem MCP 服务
+  zorron add tool qwen-code       # 创建 qwen-code 工具模板
+  zorron init                     # 初始化本地配置
+  zorron list                     # 查看所有配置
+  zorron deploy                   # 部署配置
+EOF
+}
+
+# ---- 命令: add skill ----
+cmd_add_skill() {
+    local name="${1:?请指定 Skill 名称}"
+    local skill_dir="${ZORRON_ROOT}/shared/skills/${name}"
+
+    if [[ -d "$skill_dir" ]]; then
+        log_error "Skill 已存在: $name"
+        exit 1
+    fi
+
+    mkdir -p "$skill_dir"
+
+    cat > "$skill_dir/SKILL.md" <<EOF
+# Skill: ${name}
+
+## 描述
+在此描述这个 Skill 的功能和使用场景。
+
+## 触发条件
+- 当用户请求...时自动激活
+
+## 指令
+1. 在此编写具体的执行指令
+2. 每条指令应该清晰明确
+
+## 输出格式
+描述期望的输出格式和内容结构。
+
+## 注意事项
+- 列出使用此 Skill 时需要注意的事项
+EOF
+
+    log_ok "Skill 已创建: shared/skills/${name}/"
+    log_info "请编辑 SKILL.md 来定义 Skill 的行为"
+}
+
+# ---- 命令: add mcp ----
+cmd_add_mcp() {
+    local name="${1:?请指定 MCP 服务名称}"
+    local mcp_json="${ZORRON_ROOT}/shared/mcp-servers.json"
+    local mcp_dir="${ZORRON_ROOT}/shared/mcp-servers"
+
+    # 询问服务类型
+    echo -e "${C_BOLD}请选择 MCP 服务类型:${C_RESET}"
+    echo "  1) stdio  (标准输入输出，本地进程)"
+    echo "  2) sse    (Server-Sent Events，远程服务)"
+    echo "  3) streamable-http (流式 HTTP)"
+    read -rp "选择 [1-3]: " type_choice
+
+    local transport_type="stdio"
+    case "$type_choice" in
+        1) transport_type="stdio" ;;
+        2) transport_type="sse" ;;
+        3) transport_type="streamable-http" ;;
+        *) log_error "无效选择"; exit 1 ;;
+    esac
+
+    # 询问详细信息
+    local command="" url=""
+    if [[ "$transport_type" == "stdio" ]]; then
+        read -rp "命令 (如 npx, python): " command
+        read -rp "参数 (如 -y @modelcontextprotocol/server-filesystem): " args
+    else
+        read -rp "URL (如 http://localhost:3000/mcp): " url
+    fi
+
+    # 生成 JSON 条目
+    local entry=""
+    if [[ "$transport_type" == "stdio" ]]; then
+        entry=$(cat <<ENTRY
+{
+  "${name}": {
+    "command": "${command}",
+    "args": [${args}],
+    "disabled": false
+  }
+}
+ENTRY
+)
+    else
+        entry=$(cat <<ENTRY
+{
+  "${name}": {
+    "url": "${url}",
+    "disabled": false
+  }
+}
+ENTRY
+)
+    fi
+
+    # 决定存储方式：拆分式目录
+    mkdir -p "$mcp_dir"
+    echo "$entry" | jq '.' > "$mcp_dir/${name}.json"
+    log_ok "MCP 服务已添加: shared/mcp-servers/${name}.json"
+    log_info "下次运行 ./install.sh 时将自动合并"
+}
+
+# ---- 命令: add tool ----
+cmd_add_tool() {
+    local name="${1:?请指定工具名称}"
+    local tool_dir="${ZORRON_ROOT}/tools/${name}"
+
+    if [[ -d "$tool_dir" ]]; then
+        log_error "工具已存在: $name"
+        exit 1
+    fi
+
+    mkdir -p "$tool_dir/commands"
+
+    # 询问部署信息
+    read -rp "全局配置目录 (如 ~/.claude): " global_dir
+    read -rp "项目级配置目录 (如 .claude, 可留空): " project_dir
+    read -rp "CLI 检测命令 (如 claude): " cli_cmd
+
+    # 生成 target.conf
+    cat > "$tool_dir/target.conf" <<EOF
+# ${name} - 工具配置描述
+# 自动生成于 $(date +%Y-%m-%d)
+
+DEF_GLOBAL_DIR=${global_dir:-~/.${name}}
+DEF_PROJECT_DIR=${project_dir:-}
+LINK_TYPE=symlink
+CLI_CMD=${cli_cmd:-}
+VERSION_CHECK=
+EOF
+
+    # 生成示例配置
+    cat > "$tool_dir/config.json" <<EOF
+{
+  "_comment": "${name} 配置文件 - 根据需要修改",
+  "mcpServers": {}
+}
+EOF
+
+    # 生成项目级指令模板
+    cat > "$tool_dir/README.md" <<EOF
+# ${name}
+
+在此描述此工具的配置说明。
+EOF
+
+    log_ok "工具模板已创建: tools/${name}/"
+    echo ""
+    log_info "下一步:"
+    log_step "1. 编辑 tools/${name}/target.conf 确认部署路径"
+    log_step "2. 编辑 tools/${name}/config.json 填入实际配置"
+    log_step "3. 运行 ./install.sh 部署"
+}
+
+# ---- 命令: init ----
+cmd_init() {
+    log_info "初始化 Zorron 本地配置..."
+
+    # 创建 Zorron 主目录
+    mkdir -p "$ZORRON_HOME"
+
+    # 创建密钥示例文件
+    local secrets_example="$ZORRON_HOME/secrets.local.json.example"
+    if [[ ! -f "$secrets_example" ]]; then
+        cat > "$secrets_example" <<'EOF'
+{
+  "_comment": "Zorron 敏感信息配置 - 此文件不会被 Git 追踪",
+  "mcpServers": {
+    "example-api": {
+      "env": {
+        "API_KEY": "your-api-key-here"
+      }
+    }
+  }
+}
+EOF
+        log_ok "密钥模板已创建: $secrets_example"
+    fi
+
+    # 创建实际密钥文件（如果不存在）
+    if [[ ! -f "$ZORRON_SECRETS" ]]; then
+        cp "$secrets_example" "$ZORRON_SECRETS"
+        log_ok "密钥文件已创建: $ZORRON_SECRETS"
+        log_warn "请编辑此文件填入实际的密钥信息"
+    fi
+
+    # 创建主机覆盖目录
+    local host_dir="${ZORRON_ROOT}/hosts/${ZORRON_HOSTNAME}/override"
+    if [[ ! -d "$host_dir" ]]; then
+        mkdir -p "$host_dir/tools"
+        log_ok "主机覆盖目录已创建: hosts/${ZORRON_HOSTNAME}/override/"
+    fi
+
+    # 创建 .env.local.example
+    local env_example="${ZORRON_ROOT}/.env.local.example"
+    if [[ ! -f "$env_example" ]]; then
+        cat > "$env_example" <<'EOF'
+# Zorron 环境变量模板
+# 复制为 .env.local 并填入实际值
+
+# MCP 服务地址（按需修改）
+# MCP_SERVER_URL=http://localhost:3000/mcp
+
+# API 密钥（不要提交到 Git）
+# ANTHROPIC_API_KEY=sk-ant-xxx
+# OPENAI_API_KEY=sk-xxx
+EOF
+        log_ok "环境变量模板已创建: .env.local.example"
+    fi
+
+    echo ""
+    log_ok "初始化完成！"
+    log_info "请编辑以下文件填入你的实际配置:"
+    log_step "  $ZORRON_SECRETS"
+    log_step "  hosts/${ZORRON_HOSTNAME}/override/ (按需)"
+}
+
+# ---- 命令: list ----
+cmd_list() {
+    echo -e "${C_BOLD}📋 Zorron Agent Toolchain 配置清单${C_RESET}"
+    echo "─────────────────────────────────────────────"
+
+    # 列出工具
+    echo ""
+    echo -e "${C_BOLD}🔧 工具配置 (tools/):${C_RESET}"
+    for tool_dir in "${ZORRON_ROOT}/tools"/*/; do
+        [[ -d "$tool_dir" ]] || continue
+        tool_name=$(basename "$tool_dir")
+        conf_file="$tool_dir/target.conf"
+
+        if [[ -f "$conf_file" ]]; then
+            parse_target_conf "$conf_file"
+            local status="❌ 未安装"
+            if [[ -n "$TARGET_CLI_CMD" ]] && detect_tool "$TARGET_CLI_CMD"; then
+                status="✅ 已安装"
+            elif [[ -z "$TARGET_CLI_CMD" ]]; then
+                status="⚪ 无条件"
+            fi
+            echo "  $status  $tool_name  ($TARGET_CLI_CMD:-无检测命令)"
+        else
+            echo "  ⚠️  $tool_name  (缺少 target.conf)"
+        fi
+    done
+
+    # 列出 Skills
+    echo ""
+    echo -e "${C_BOLD}📚 Skills (shared/skills/):${C_RESET}"
+    for skill_dir in "${ZORRON_ROOT}/shared/skills"/*/; do
+        [[ -d "$skill_dir" ]] || continue
+        skill_name=$(basename "$skill_dir")
+        if [[ -f "$skill_dir/SKILL.md" ]]; then
+            # 提取描述行
+            desc=$(grep -m1 "描述" "$skill_dir/SKILL.md" | sed 's/.*描述[：:]*//' | xargs 2>/dev/null || echo "")
+            echo "  ✅  $skill_name  ${desc:+- $desc}"
+        else
+            echo "  ⚠️  $skill_name  (缺少 SKILL.md)"
+        fi
+    done
+
+    # 列出 MCP 服务
+    echo ""
+    echo -e "${C_BOLD}🔗 MCP 服务:${C_RESET}"
+    local mcp_count=0
+    if [[ -f "${ZORRON_ROOT}/shared/mcp-servers.json" ]]; then
+        if command -v jq &>/dev/null; then
+            jq -r '.mcpServers // {} | keys[]' "${ZORRON_ROOT}/shared/mcp-servers.json" 2>/dev/null | while read -r svc; do
+                echo "  ✅  $svc  (mcp-servers.json)"
+                ((mcp_count++)) || true
+            done
+        else
+            echo "  📄  mcp-servers.json (安装 jq 查看详情)"
+        fi
+    fi
+    if [[ -d "${ZORRON_ROOT}/shared/mcp-servers" ]]; then
+        for mcp_file in "${ZORRON_ROOT}/shared/mcp-servers"/*.json; do
+            [[ -f "$mcp_file" ]] || continue
+            svc_name=$(basename "$mcp_file" .json)
+            echo "  ✅  $svc_name  (mcp-servers/)"
+        done
+    fi
+    if [[ $mcp_count -eq 0 ]] && [[ ! -d "${ZORRON_ROOT}/shared/mcp-servers" ]]; then
+        echo "  (暂无)"
+    fi
+
+    # 列出主机覆盖
+    echo ""
+    echo -e "${C_BOLD}🖥️  主机覆盖 (hosts/):${C_RESET}"
+    for host_dir in "${ZORRON_ROOT}/hosts"/*/; do
+        [[ -d "$host_dir" ]] || continue
+        host_name=$(basename "$host_dir")
+        local marker=""
+        [[ "$host_name" == "$ZORRON_HOSTNAME" ]] && marker=" ← 当前主机"
+        echo "  📁  $host_name${marker}"
+    done
+
+    echo ""
+}
+
+# ---- 命令: deploy ----
+cmd_deploy() {
+    if [[ ! -x "${ZORRON_ROOT}/install.sh" ]]; then
+        chmod +x "${ZORRON_ROOT}/install.sh"
+    fi
+    "${ZORRON_ROOT}/install.sh" "$@"
+}
+
+# ---- 命令: status ----
+cmd_status() {
+    echo -e "${C_BOLD}📊 Zorron Agent Toolchain 状态${C_RESET}"
+    echo "─────────────────────────────────────────────"
+    echo ""
+    echo -e "  ${C_BOLD}仓库根目录:${C_RESET}  $ZORRON_ROOT"
+    echo -e "  ${C_BOLD}本地配置目录:${C_RESET} $ZORRON_HOME"
+    echo -e "  ${C_BOLD}当前主机:${C_RESET}    $ZORRON_HOSTNAME"
+    echo ""
+
+    # 检查密钥文件
+    if [[ -f "$ZORRON_SECRETS" ]]; then
+        echo -e "  ${C_GREEN}✅${C_RESET} 密钥文件: $ZORRON_SECRETS"
+    else
+        echo -e "  ${C_YELLOW}⚠️${C_RESET} 密钥文件不存在 (运行 ${C_BOLD}zorron init${C_RESET} 创建)"
+    fi
+
+    # 检查主机覆盖
+    local host_override="${ZORRON_ROOT}/hosts/${ZORRON_HOSTNAME}/override"
+    if [[ -d "$host_override" ]]; then
+        local file_count
+        file_count=$(find "$host_override" -type f | wc -l)
+        echo -e "  ${C_GREEN}✅${C_RESET} 主机覆盖: $file_count 个文件"
+    else
+        echo -e "  ${C_DIM}⚪${C_RESET} 无主机覆盖"
+    fi
+
+    # 检查 jq
+    if command -v jq &>/dev/null; then
+        echo -e "  ${C_GREEN}✅${C_RESET} jq: $(jq --version 2>/dev/null)"
+    else
+        echo -e "  ${C_YELLOW}⚠️${C_RESET} jq 未安装 (JSON 合并功能受限)"
+    fi
+
+    echo ""
+}
+
+# ---- 命令: backup ----
+cmd_backup() {
+    local subcmd="${1:-list}"
+    shift || true
+
+    case "$subcmd" in
+        list)
+            list_backups "$@"
+            ;;
+        restore)
+            restore_backup "$@"
+            ;;
+        *)
+            log_error "未知备份命令: $subcmd"
+            echo "可用命令: list, restore <路径>"
+            exit 1
+            ;;
+    esac
+}
+
+# ---- 主入口 ----
+main() {
+    local cmd="${1:-help}"
+    shift || true
+
+    case "$cmd" in
+        add)
+            local subcmd="${1:-}"
+            case "$subcmd" in
+                skill) shift; cmd_add_skill "$@" ;;
+                mcp)   shift; cmd_add_mcp "$@" ;;
+                tool)  shift; cmd_add_tool "$@" ;;
+                *)
+                    log_error "未知 add 子命令: $subcmd"
+                    echo "可用: add skill|mcp|tool <名称>"
+                    exit 1
+                    ;;
+            esac
+            ;;
+        init)   cmd_init ;;
+        list)   cmd_list ;;
+        deploy) cmd_deploy "$@" ;;
+        status) cmd_status ;;
+        backup) cmd_backup "$@" ;;
+        help|--help|-h)
+            show_help
+            ;;
+        *)
+            log_error "未知命令: $cmd"
+            echo "运行 'zorron help' 查看帮助"
+            exit 1
+            ;;
+    esac
+}
+
+main "$@"

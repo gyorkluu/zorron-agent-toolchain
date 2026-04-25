@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "local-dev-server": {
+      "command": "node",
+      "args": ["{{HOME}}/Projects/my-mcp-server/index.js"],
+      "disabled": false
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "filesystem": {
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-filesystem", "{{HOME}}/Documents", "{{HOME}}/Projects"],
+    "disabled": false
+  }
+}

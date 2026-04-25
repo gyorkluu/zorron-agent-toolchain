@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(brew *)",
+      "Bash(open *)"
+    ]
+  },
+  "env": {
+    "ZORRON_HOST": "macbook-pro"
+  }
+}

@@ -1,0 +1,45 @@
+# Zorron Agent Toolchain - Git 忽略规则
+
+# ---- 敏感信息 ----
+*.local
+*.local.*
+.env.local
+.env.*.local
+secrets.local.json
+*.pem
+*.key
+*.cert
+*.p12
+*.jks
+id_rsa*
+id_ed25519*
+
+# ---- 备份文件 ----
+*.backup.*
+*.bak
+*.orig
+*.swp
+*.swo
+*~
+
+# ---- 系统文件 ----
+.DS_Store
+.DS_Store?
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ---- 编辑器 ----
+.vscode/
+.idea/
+*.sublime-*
+*.code-workspace
+
+# ---- 临时文件 ----
+*.tmp
+*.temp
+*.log
+
+# ---- Node.js (如果本地有开发依赖) ----
+node_modules/
+package-lock.json

@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git *)",
+      "Bash(npm *)",
+      "Bash(node *)",
+      "Bash(python3 *)",
+      "Bash(pip *)",
+      "Bash(make *)",
+      "Bash(cargo *)",
+      "Bash(go *)",
+      "Bash(docker *)",
+      "Bash(cat *)",
+      "Bash(ls *)",
+      "Bash(find *)",
+      "Bash(grep *)",
+      "Bash(sed *)",
+      "Bash(awk *)",
+      "Bash(mkdir *)",
+      "Bash(cp *)",
+      "Bash(mv *)",
+      "Bash(touch *)",
+      "Bash(chmod *)",
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit"
+    ],
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(rm -rf ~)",
+      "Bash(sudo *)"
+    ]
+  },
+  "env": {
+    "ZORRON_ROOT": "{{HOME}}/zorron-agent-toolchain"
+  },
+  "mcpServers": {}
+}
