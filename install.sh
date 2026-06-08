@@ -180,27 +180,27 @@ log_audit "deploy_start" "Force: $FORCE, Dry-run: $DRY_RUN"
 
 # 检查并安装 git
 if ! command -v git &>/dev/null; then
-    install_missing_dependency "git"
+    install_missing_dependency "git" || true
 fi
 
 # 检查并安装 python3
 if ! command -v python3 &>/dev/null; then
-    install_missing_dependency "python3"
+    install_missing_dependency "python3" || true
 fi
 
 # 检查并安装 bun
 if ! command -v bun &>/dev/null && [[ ! -f "$HOME/.bun/bin/bun" ]]; then
-    install_missing_dependency "bun"
+    install_missing_dependency "bun" || true
 fi
 
 # 检查并安装 jq
 if ! command -v jq &>/dev/null; then
-    install_missing_dependency "jq"
+    install_missing_dependency "jq" || true
 fi
 
 # 检查并安装 envsubst
 if ! command -v envsubst &>/dev/null; then
-    install_missing_dependency "envsubst"
+    install_missing_dependency "envsubst" || true
 fi
 
 # 确保 Zorron 本地目录存在
