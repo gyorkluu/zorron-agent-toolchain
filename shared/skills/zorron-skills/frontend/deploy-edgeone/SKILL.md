@@ -24,7 +24,7 @@ Scaffold, build, and deploy frontend projects (e.g., React, Vue, Next.js static,
 | Tool | Purpose | Constraint |
 | --- | --- | --- |
 | `edgeone` CLI | Direct interaction with EdgeOne Pages API | Must be installed globally via npm or bun |
-| `edgeone.json` | Configuration of project build parameters | Placed in the frontend root directory |
+| `edgeone.json` | Configuration of project build parameters | Placed in the frontend root directory. For detailed redirect, rewrite, header, cloudFunctions, and cron schedules configuration, refer to [pages_spec.md](references/pages_spec.md) |
 
 ## 📋 Execution Workflow
 
@@ -49,7 +49,7 @@ Scaffold, build, and deploy frontend projects (e.g., React, Vue, Next.js static,
    # Link the directory to an existing EdgeOne Pages project
    edgeone pages link
    ```
-2. Confirm the presence of `edgeone.json` in the root directory. If missing, create it using the template in [edgeone_config.json](references/edgeone_config.json):
+2. Confirm the presence of `edgeone.json` in the root directory. If missing, create it using the template in [edgeone_config.json](references/edgeone_config.json). For advanced routing, headers, cloud functions, or timers, reference the full specification in [pages_spec.md](references/pages_spec.md):
    ```json
    {
      "buildCommand": "npm run build",
