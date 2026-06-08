@@ -66,8 +66,21 @@ log_info "前置检查..."
 log_audit "deploy_start" "Force: $FORCE, Dry-run: $DRY_RUN"
 
 # 检查必要工具
+if ! command -v git &>/dev/null; then
+    log_warn "未检测到 git，将无法自动拉取或同步子模块"
+fi
+
+if ! command -v python3 &>/dev/null; then
+    log_warn "未检测到 python3，将无法自动运行 Skill 静态语法校验"
+fi
+
+if ! command -v bun &>/dev/null; then
+    log_warn "未检测到 bun 运行时，依赖 Bun 运行的 MCP 服务及本地 BFF 将受限"
+    log_warn "建议安装: curl -fsSL https://bun.sh/install | bash"
+fi
+
 if ! command -v jq &>/dev/null; then
-    log_warn "未检测到 jq，JSON 合并功能将受限"
+    log_warn "未检测到 jq，JSON 深度合并功能将受限"
     log_warn "建议安装: sudo apt install jq / brew install jq"
 fi
 

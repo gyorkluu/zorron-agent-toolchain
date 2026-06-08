@@ -319,9 +319,16 @@ echo '{...}' > hosts/$(hostname -s)/override/tools/claude-code/settings.json
 
 ## 依赖
 
-- **必需**: Bash 4+
-- **推荐**: `jq`（JSON 处理）、`envsubst`（占位符替换）
-- **可选**: 各 Agent 工具的 CLI（claude、hermes、opencode 等）
+- **必需**:
+  - **Bash 4+** (脚本执行环境)
+  - **Git** (拉取与同步共享技能子模块)
+  - **Python 3** (执行 Skill 静态结构合法性校验)
+  - **Bun 运行时** (执行轻量级 MCP 服务及运行本地开发微服务/BFF)
+- **推荐**:
+  - **`jq`** (处理多工具 MCP JSON 配置深度合并，未安装时支持自动降级)
+  - **`envsubst`** (渲染配置文件占位符，未安装时自动降级为 `sed` 替换)
+- **可选**:
+  - 各 Agent 工具的 CLI（如 `claude`、`hermes`、`opencode` 等）
 
 ## 🍴 Fork 独立定制与长期使用指南
 
