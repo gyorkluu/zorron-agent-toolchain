@@ -291,15 +291,42 @@ echo '{...}' > hosts/$(hostname -s)/override/tools/claude-code/settings.json
 - **推荐**: `jq`（JSON 处理）、`envsubst`（占位符替换）
 - **可选**: 各 Agent 工具的 CLI（claude、hermes、opencode 等）
 
-## Fork 与定制
+## 🍴 Fork 独立定制与长期使用指南
 
-欢迎 Fork 此项目并改成你自己的品牌：
+Zorron Agent Toolchain 鼓励开发者 Fork 并定制专属于您（或您团队）的个人 AI 编程基础设施配置库。
 
-1. Fork 仓库
-2. 修改 `install.sh` 中的品牌信息
-3. 替换 `shared/rules/global.md` 为你的编码规范
-4. 添加你常用的工具配置
-5. 推送到你自己的仓库
+### 1. ⚙️ Fork 后的独立使用 (无须提 PR)
+- **长期独立维护**：Fork 本仓库后，您**不需要**向原作者仓库（Upstream）提交 Pull Request / 变更合并。您完全可以将其作为一个独立项目，长期维护并推送到您自己的 Fork 仓库。
+- **多设备配置同步**：在您的多台开发设备上（如公司电脑、个人 Mac、云服务器），直接 Clone 您的 **Fork 仓库**，这样任何一处配置更改，通过 `git commit & push` 之后，在其他设备运行 `git pull && ./install.sh` 即可瞬间同步环境。
+
+### 2. 🔄 如何同步上游（作者仓库）的最新功能？
+当上游仓库增加了新的 Agent 支持（如对接了新推出的开发工具）、修复了核心部署 Bug、或者优化了脚本时，您可以通过以下标准 Git 工作流，安全地将上游的新特性拉取并合并到您的个人 Fork 分支中，而不会破坏您的个人配置：
+
+```bash
+# 1. 进入本地工具链目录
+cd ~/zorron-agent-toolchain
+
+# 2. 将作者的源仓库添加为 "upstream" 远程源 (只需执行一次)
+git remote add upstream https://github.com/gyorkluu/zorron-agent-toolchain.git
+
+# 3. 获取上游仓库的最新修改
+git fetch upstream
+
+# 4. 确保您在本地 main 分支上
+git checkout main
+
+# 5. 合并上游 main 分支到您的本地 main 分支
+git merge upstream/main
+
+# 6. 推送合并后的最新状态到您自己的个人 Fork 远程库
+git push origin main
+```
+
+### 3. 🛡️ 最佳实践：如何避免与上游发生合并冲突 (Conflict)？
+为了在后续同步上游更新时享受 "零冲突" 的平滑体验，建议您遵循以下**解耦设计规则**进行个人定制：
+1. **不要直接修改公共基础文件**：例如不要直接修改 `tools/claude-code/settings.json` 的通用部分。
+2. **充分使用主机覆盖 (Host Override)**：把所有个性化配置、独特的插件路径或临时参数，全部放在 `hosts/$(hostname -s)/override/` 对应的目录下。
+3. **充分使用本地文件覆盖**：把敏感数据、IP 地址等利用 `~/.zorron/secrets.local.json` 或 `.env.local` 写入。这些文件被 `.gitignore` 自动忽略，永远不会进入版本控制，从而 100% 避免了合并冲突的可能。
 
 ## License
 
