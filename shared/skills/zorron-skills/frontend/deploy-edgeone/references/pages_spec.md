@@ -181,6 +181,27 @@ EdgeOne Pages supports Serverless Functions inside the `cloud-functions/` or `ed
 - **Edge Functions**: Used for URL rewrites, A/B testing, custom security headers, image manipulation, and instant API responses.
 - **Cloud Functions**: Used for complex business logic, database queries, long-lived API connections (like AI streaming), and background data aggregation.
 
+### Folder Structure & Directory Placement
+
+In your project repository, these folders must be placed at the **project root directory** (adjacent to `edgeone.json` and `package.json`):
+
+```text
+my-pages-project/
+├── edge-functions/         # Edge Functions source code
+│   └── api/
+│       └── hello.js        # Accessible via https://<your-domain>/api/hello
+├── cloud-functions/        # Cloud Functions source code
+│   └── index.js            # Accessible via https://<your-domain>/
+├── edgeone.json            # Configuration file
+└── package.json            # Node project configuration
+```
+
+#### Important Deployment Rules for Functions:
+1. **Git / Automatic Cloud Build**: When deploying via Git integration, the Pages builder will automatically locate `edge-functions/` and `cloud-functions/` at the root of your repository and compile them.
+2. **Local / Manual CLI Deployment (`edgeone pages deploy <dir>`)**:
+   - If you use `edgeone pages deploy` (which builds the project automatically via CLI), the CLI handles copying these folders.
+   - If you run your own build command (e.g. `npm run build` which outputs to `dist/`) and manually deploy the folder via `edgeone pages deploy ./dist`, you **MUST** copy the `edge-functions/` and/or `cloud-functions/` folders, along with `package.json`, into your output directory (`./dist`) before running the deploy command.
+
 ---
 
 ## 3. Integrated Storage Options
