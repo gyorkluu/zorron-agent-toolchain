@@ -61,31 +61,146 @@ source "${ZORRON_ROOT}/scripts/backup.sh"
 # ---- 打印横幅 ----
 print_banner
 
+# ---- 自动安装缺失工具的函数 ----
+install_missing_dependency() {
+    local tool_name="$1"
+    
+    if $DRY_RUN; then
+        log_step "  [模拟] 自动安装缺失的工具: ${tool_name}"
+        return 0
+    fi
+    
+    log_info "正在尝试自动安装工具: ${tool_name}..."
+    
+    local os_type
+    os_type="$(uname -s)"
+    
+    case "$tool_name" in
+        git)
+            if [[ "$os_type" == "Darwin" ]]; then
+                if command -v brew &>/dev/null; then
+                    brew install git
+                else
+                    log_warn "未检测到 Homebrew，尝试调用 xcode-select 安装 Command Line Tools..."
+                    xcode-select --install || true
+                fi
+            else
+                if command -v apt-get &>/dev/null; then
+                    sudo apt-get update && sudo apt-get install -y git
+                elif command -v yum &>/dev/null; then
+                    sudo yum install -y git
+                elif command -v pacman &>/dev/null; then
+                    sudo pacman -Sy --noconfirm git
+                else
+                    log_error "未找到支持的包管理器，请手动安装 git"
+                    return 1
+                fi
+            fi
+            ;;
+        python3)
+            if [[ "$os_type" == "Darwin" ]]; then
+                if command -v brew &>/dev/null; then
+                    brew install python
+                else
+                    log_error "未检测到 Homebrew，请手动安装 Python 3"
+                    return 1
+                fi
+            else
+                if command -v apt-get &>/dev/null; then
+                    sudo apt-get update && sudo apt-get install -y python3
+                elif command -v yum &>/dev/null; then
+                    sudo yum install -y python3
+                elif command -v pacman &>/dev/null; then
+                    sudo pacman -Sy --noconfirm python
+                else
+                    log_error "未找到支持的包管理器，请手动安装 python3"
+                    return 1
+                fi
+            fi
+            ;;
+        bun)
+            # Bun 官方安装器在 macOS & Linux 下均支持，直接写入 ~/.bun
+            curl -fsSL https://bun.sh/install | bash
+            export PATH="$HOME/.bun/bin:$PATH"
+            ;;
+        jq)
+            if [[ "$os_type" == "Darwin" ]]; then
+                if command -v brew &>/dev/null; then
+                    brew install jq
+                else
+                    log_error "未检测到 Homebrew，请手动安装 jq"
+                    return 1
+                fi
+            else
+                if command -v apt-get &>/dev/null; then
+                    sudo apt-get update && sudo apt-get install -y jq
+                elif command -v yum &>/dev/null; then
+                    sudo yum install -y jq
+                elif command -v pacman &>/dev/null; then
+                    sudo pacman -Sy --noconfirm jq
+                else
+                    log_error "未找到支持的包管理器，请手动安装 jq"
+                    return 1
+                fi
+            fi
+            ;;
+        envsubst)
+            if [[ "$os_type" == "Darwin" ]]; then
+                if command -v brew &>/dev/null; then
+                    brew install envsubst || brew install gettext
+                else
+                    log_error "未检测到 Homebrew，请手动安装 gettext"
+                    return 1
+                fi
+            else
+                if command -v apt-get &>/dev/null; then
+                    sudo apt-get update && sudo apt-get install -y gettext
+                elif command -v yum &>/dev/null; then
+                    sudo yum install -y gettext
+                elif command -v pacman &>/dev/null; then
+                    sudo pacman -Sy --noconfirm gettext
+                else
+                    log_error "未找到支持的包管理器，请手动安装 gettext"
+                    return 1
+                fi
+            fi
+            ;;
+    esac
+    
+    if command -v "$tool_name" &>/dev/null || [[ "$tool_name" == "bun" && -f "$HOME/.bun/bin/bun" ]]; then
+        log_ok "${tool_name} 自动安装完成！"
+    else
+        log_warn "${tool_name} 自动安装可能失败，请稍后检查环境。"
+    fi
+}
+
 # ---- 前置检查 ----
-log_info "前置检查..."
+log_info "检查并自动安装缺失的系统依赖..."
 log_audit "deploy_start" "Force: $FORCE, Dry-run: $DRY_RUN"
 
-# 检查必要工具
+# 检查并安装 git
 if ! command -v git &>/dev/null; then
-    log_warn "未检测到 git，将无法自动拉取或同步子模块"
+    install_missing_dependency "git"
 fi
 
+# 检查并安装 python3
 if ! command -v python3 &>/dev/null; then
-    log_warn "未检测到 python3，将无法自动运行 Skill 静态语法校验"
+    install_missing_dependency "python3"
 fi
 
-if ! command -v bun &>/dev/null; then
-    log_warn "未检测到 bun 运行时，依赖 Bun 运行的 MCP 服务及本地 BFF 将受限"
-    log_warn "建议安装: curl -fsSL https://bun.sh/install | bash"
+# 检查并安装 bun
+if ! command -v bun &>/dev/null && [[ ! -f "$HOME/.bun/bin/bun" ]]; then
+    install_missing_dependency "bun"
 fi
 
+# 检查并安装 jq
 if ! command -v jq &>/dev/null; then
-    log_warn "未检测到 jq，JSON 深度合并功能将受限"
-    log_warn "建议安装: sudo apt install jq / brew install jq"
+    install_missing_dependency "jq"
 fi
 
+# 检查并安装 envsubst
 if ! command -v envsubst &>/dev/null; then
-    log_warn "未检测到 envsubst，将使用 sed 进行占位符替换"
+    install_missing_dependency "envsubst"
 fi
 
 # 确保 Zorron 本地目录存在
