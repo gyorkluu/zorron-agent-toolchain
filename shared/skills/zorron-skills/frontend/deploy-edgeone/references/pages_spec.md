@@ -1,6 +1,6 @@
 # Tencent Cloud EdgeOne Pages Configuration & Deployment Specification
 
-This reference document outlines the complete configuration options for `edgeone.json`, deployment methods, framework integration rules, and API token management on Tencent Cloud EdgeOne Pages.
+This reference document outlines the complete configuration options for `edgeone.json`, deployment methods, framework integration rules, Pages Functions (Edge & Cloud), storage options (KV & Blob), observability, domain management, and AI integrations on Tencent Cloud EdgeOne Pages.
 
 ---
 
@@ -165,26 +165,60 @@ Define background cron jobs to periodically trigger specific functions.
 
 ---
 
-## 2. Pages Deployment Methods
+## 2. Pages Functions (Edge vs Cloud)
 
-Tencent Cloud EdgeOne Pages supports three major deployment workflows:
+EdgeOne Pages supports Serverless Functions inside the `cloud-functions/` or `edge-functions/` folders.
 
-1.  **Git Integration (Recommended)**: Connect to GitHub, GitLab, or Gitee repository. On push to the specified branch, the cloud environment automatically builds and deploys the assets.
-2.  **EdgeOne CLI Direct Upload**: Deploy directly from local dev environments or CI/CD pipelines (e.g., Jenkins, GitHub Actions) using the `edgeone` CLI:
-    ```bash
-    edgeone pages deploy ./dist -n <projectName> -t <api_token>
-    ```
-3.  **Template Scaffolding**: Initiate projects directly from curated presets (Astro, Next.js, etc.) via the EdgeOne Console.
+| Feature | Edge Functions (边缘函数) | Cloud Functions (云函数) |
+| --- | --- | --- |
+| **Execution Location** | Edge nodes worldwide (close to user) | Central Cloud data centers |
+| **Response Latency** | **Extremely Low** (millisecond cold start) | Higher (due to routing to data center) |
+| **Computation Power** | Lightweight (best for header adjustments, redirect logic) | Powerful (suited for heavy compute, DB queries) |
+| **Timeout Limit** | Short | Up to 120 seconds (configurable in `edgeone.json`) |
+| **Supported Runtimes** | JavaScript (standard Web Worker API) | Node.js, Python, Go |
+| **Storage Binding** | KV, Blob | Blob |
+
+- **Edge Functions**: Used for URL rewrites, A/B testing, custom security headers, image manipulation, and instant API responses.
+- **Cloud Functions**: Used for complex business logic, database queries, long-lived API connections (like AI streaming), and background data aggregation.
 
 ---
 
-## 3. API Token Authentication
+## 3. Integrated Storage Options
 
-In non-interactive deployment scenarios (like CI/CD pipelines or headless servers), you **must** use an API Token for authorization instead of `edgeone login`.
+EdgeOne Pages provides built-in distributed storage that can be bound directly to your functions.
 
-- **Generation**: Go to the **EdgeOne Pages Console** -> **Project Settings** -> **API Token** -> Click **Generate Token**.
-- **Security**: Store the token securely. For GitHub Actions, add it to your repository secrets (`EDGEONE_API_TOKEN`).
-- **Usage**:
-  ```bash
-  edgeone pages deploy ./dist -n <projectName> -t "${EDGEONE_API_TOKEN}"
-  ```
+### A. KV Storage (Key-Value Store)
+- **Architecture**: Centralized storage with edge node caching.
+- **Consistency**: Eventually consistent (edge cache duration up to 60 seconds).
+- **Data Limit**: Single value up to 25 MB.
+- **Availability**: Currently supported inside Edge Functions.
+- **Use Case**: Clicking counters, feature toggles, session states, configuration variables.
+
+### B. Blob Storage (Object Store)
+- **Architecture**: Distributed object store with folder/directory path support.
+- **Consistency**: Supports both "Eventually Consistent" (reads edge caches) and "Strongly Consistent" (direct fetch) modes.
+- **Availability**: Supported in both Edge Functions and Cloud Functions.
+- **Use Case**: Image uploads, document hosting, AI generated content management, JSON structured database storage.
+
+---
+
+## 4. Observability & Domain Management
+
+### A. Observability
+EdgeOne Pages Console provides out-of-the-box charts for monitoring:
+- **Metrics Analysis**: Request count, error rates (4xx, 5xx), transfer sizes, and execution latency.
+- **Log Analysis**: Real-time console logs and error stack traces to debug function failures.
+
+### B. Domain Management
+- **Custom Domains**: Bind domains in Console -> Project Settings -> Domains.
+- **DNS Records**: Point the domain CNAME to the allocated EdgeOne Page domain (e.g. `your-project.edgeone.app`).
+- **HTTPS & SSL**: Automatic provisioning and renewal of free Let's Encrypt certificates, or upload your own SSL custom certificates.
+
+---
+
+## 5. AI Tool Integrations
+
+EdgeOne Pages provides advanced options to deploy and maintain pages using AI Agent ecosystems:
+
+1.  **MCP Server**: Enables AI clients (like Cursor or VS Code) to deploy folders, HTML pages, or full frameworks to EdgeOne Pages via simple text prompts in the chat panel.
+2.  **EdgeOne Pages Skills**: A curated set of agent procedures and scripts to automate workspace diagnostics, dependency installations, and deployment commands directly from your local agent environment.

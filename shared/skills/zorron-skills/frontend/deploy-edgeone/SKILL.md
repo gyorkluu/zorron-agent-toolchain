@@ -62,11 +62,11 @@ Scaffold, build, and deploy frontend projects (e.g., React, Vue, Next.js static,
 - 🔄 Fallback: If `edgeone pages link` fails because the cloud project does not exist yet, the CLI will guide you through creating a new project interactively. Follow the prompts to configure project details.
 
 ### Phase 3: Local Dev & Environment Variables
-1. Run local development with unified function debugging support:
+1. Run local development with unified function debugging support. This compiles and mounts both `edge-functions/` and `cloud-functions/` directories:
    ```bash
    edgeone pages dev
    ```
-   *Note: This starts the server on port 8088 (default) serving both the frontend assets and Edge Functions.*
+   *Note: This starts the server on port 8088 (default) serving frontend assets, Edge Functions, and Cloud Functions (Node.js, Python, Go) in a unified environment. For storage bindings (KV or Blob), ensure namespaces are configured in the console. Refer to [pages_spec.md](references/pages_spec.md) for full storage specifications.*
 2. Synchronize environment variables from the cloud console to the local environment:
    ```bash
    edgeone pages env pull
@@ -75,7 +75,7 @@ Scaffold, build, and deploy frontend projects (e.g., React, Vue, Next.js static,
    ```bash
    edgeone pages env set VITE_API_URL "https://api.my-app.com"
    ```
-- ✅ Success: Dev server starts without errors, and local `.env` values are synchronized via `env pull`.
+- ✅ Success: Dev server starts without errors on port 8088, and local `.env` values are synchronized via `env pull`.
 - 🔄 Fallback: If `env pull` fails due to login expiration, run `edgeone login` (selecting `China` or `Global`) to refresh the authentication session and retry.
 
 ### Phase 4: Local Build & Manual Deployment
