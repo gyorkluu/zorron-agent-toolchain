@@ -25,6 +25,18 @@ log_ok()    { echo -e "${C_GREEN}✔${C_RESET}  $*"; }
 log_warn()  { echo -e "${C_YELLOW}⚠${C_RESET}  $*"; }
 log_error() { echo -e "${C_RED}✖${C_RESET}  $*" >&2; }
 log_step()  { echo -e "${C_CYAN}   ➜${C_RESET} $*"; }
+log_audit() {
+    local event="${1:?}"
+    local details="${2:-}"
+    local log_file="$ZORRON_HOME/install.log"
+    mkdir -p "$(dirname "$log_file")"
+    local timestamp
+    timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || date +"%Y-%m-%dT%H:%M:%SZ")
+    local clean_details
+    clean_details=$(echo "$details" | sed 's/"/\\"/g' | tr -d '\n' | tr -d '\r')
+    printf '{"timestamp":"%s","host":"%s","event":"%s","details":"%s"}\n' \
+        "$timestamp" "$ZORRON_HOSTNAME" "$event" "$clean_details" >> "$log_file"
+}
 
 # ---- 路径解析 ----
 # 将 target.conf 中的路径变量展开为实际路径
@@ -279,10 +291,12 @@ deploy_link() {
         symlink)
             ln -s "$src" "$dst"
             log_ok "符号链接: $dst → $src"
+            log_audit "deploy_link" "Symlink: $dst -> $src"
             ;;
         copy)
             cp -a "$src" "$dst"
             log_ok "复制: $dst ← $src"
+            log_audit "deploy_copy" "Copy: $dst <- $src"
             ;;
         dir)
             # 目录模式：将源目录内容链接/复制到目标

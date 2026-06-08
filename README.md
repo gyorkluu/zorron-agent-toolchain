@@ -127,6 +127,14 @@ cd ~/zorron-agent-toolchain && git pull && ./install.sh
 ./scripts/zorron backup restore ~/.claude
 ```
 
+### ⌨️ 命令行自动补全 (Zsh)
+
+为了在使用 `zorron` 助手时获得子命令和参数的智能补全，可以直接在您的 `~/.zshrc` 中 source 补全脚本：
+
+```bash
+source ~/Documents/workspace/zorron-agent-toolchain/scripts/completion.zsh
+```
+
 ## 目录结构
 
 ```

@@ -238,13 +238,6 @@ EOF
         log_ok "密钥模板已创建: $secrets_example"
     fi
 
-    # 创建实际密钥文件（如果不存在）
-    if [[ ! -f "$ZORRON_SECRETS" ]]; then
-        cp "$secrets_example" "$ZORRON_SECRETS"
-        log_ok "密钥文件已创建: $ZORRON_SECRETS"
-        log_warn "请编辑此文件填入实际的密钥信息"
-    fi
-
     # 创建主机覆盖目录
     local host_dir="${ZORRON_ROOT}/hosts/${ZORRON_HOSTNAME}/override"
     if [[ ! -d "$host_dir" ]]; then
@@ -267,6 +260,54 @@ EOF
 # OPENAI_API_KEY=sk-xxx
 EOF
         log_ok "环境变量模板已创建: .env.local.example"
+    fi
+
+    # 交互式向导
+    echo -e "\n${C_BOLD}🔑 Zorron 密钥配置向导 (可直接回车跳过)${C_RESET}"
+    echo "─────────────────────────────────────────────"
+    
+    # 隐藏输入读取 API 密钥
+    local anthropic_key=""
+    local openai_key=""
+    
+    read -r -s -p "请输入 ANTHROPIC_API_KEY: " anthropic_key
+    echo "" # 换行
+    read -r -s -p "请输入 OPENAI_API_KEY: " openai_key
+    echo ""
+    
+    # 创建实际密钥文件（如果不存在）
+    if [[ ! -f "$ZORRON_SECRETS" ]]; then
+        cat > "$ZORRON_SECRETS" <<EOF
+{
+  "_comment": "Zorron 敏感信息配置 - 此文件不会被 Git 追踪",
+  "mcpServers": {
+    "openai-mcp": {
+      "env": {
+        "OPENAI_API_KEY": "${openai_key}"
+      }
+    },
+    "anthropic-mcp": {
+      "env": {
+        "ANTHROPIC_API_KEY": "${anthropic_key}"
+      }
+    }
+  }
+}
+EOF
+        log_ok "密钥文件已创建并写入所设 API Key: $ZORRON_SECRETS"
+    else
+        log_warn "密钥文件 $ZORRON_SECRETS 已存在，跳过向导以防覆盖原有配置"
+    fi
+
+    # 创建 .env.local 填入实际值
+    local env_local="${ZORRON_ROOT}/.env.local"
+    if [[ ! -f "$env_local" ]]; then
+        cat > "$env_local" <<EOF
+# Zorron 本地环境变量
+ANTHROPIC_API_KEY=${anthropic_key}
+OPENAI_API_KEY=${openai_key}
+EOF
+        log_ok "本地环境变量文件已创建: .env.local"
     fi
 
     echo ""

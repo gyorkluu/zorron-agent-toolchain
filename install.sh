@@ -57,6 +57,7 @@ print_banner
 
 # ---- 前置检查 ----
 log_info "前置检查..."
+log_audit "deploy_start" "Force: $FORCE, Dry-run: $DRY_RUN"
 
 # 检查必要工具
 if ! command -v jq &>/dev/null; then
@@ -70,6 +71,16 @@ fi
 
 # 确保 Zorron 本地目录存在
 mkdir -p "$ZORRON_HOME"
+
+# 检查并拉取子模块
+if [[ -d "${ZORRON_ROOT}/shared/skills/zorron-skills" ]] && [[ ! -f "${ZORRON_ROOT}/shared/skills/zorron-skills/README.md" ]]; then
+    log_info "🔄 检测到 Skill 子模块未初始化，正在拉取..."
+    if command -v git &>/dev/null; then
+        git submodule update --init --recursive || log_warn "子模块自动拉取失败，请检查网络连接"
+    else
+        log_warn "未检测到 git 命令，无法自动拉取子模块"
+    fi
+fi
 
 # ---- 干运行提示 ----
 if $DRY_RUN; then
@@ -289,6 +300,14 @@ if [[ -d "$SHARED_SKILLS_DIR" ]]; then
         skill_dir=$(dirname "$skill_file")
         skill_name=$(basename "$skill_dir")
 
+        # 校验 Skill 结构稳定性
+        if command -v python3 &>/dev/null && [[ -f "${ZORRON_ROOT}/scripts/validate_skill.py" ]]; then
+            if ! python3 "${ZORRON_ROOT}/scripts/validate_skill.py" "$skill_file" >/dev/null 2>&1; then
+                log_warn "  ⚠️  Skill 校验失败 (Critical Error): $skill_name，跳过部署。请运行: python3 scripts/validate_skill.py $skill_file"
+                continue
+            fi
+        fi
+
         if $DRY_RUN; then
             log_step "[模拟] 部署 Skill: $skill_name"
         else
@@ -369,6 +388,7 @@ fi
 # ---- 完成 ----
 echo ""
 log_ok "✅ Zorron Agent Toolchain 已就绪！"
+log_audit "deploy_success" "Completed successfully. Installed: ${INSTALLED_TOOLS[*]}"
 echo ""
 echo -e "${C_BOLD}  已部署工具:${C_RESET} ${INSTALLED_TOOLS[*]}"
 echo -e "${C_BOLD}  配置目录:${C_RESET} $ZORRON_HOME"
