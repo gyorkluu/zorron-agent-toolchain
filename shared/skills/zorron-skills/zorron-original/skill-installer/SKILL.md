@@ -1,8 +1,8 @@
 ---
 name: skill-installer
-description: Install Codex skills into $CODEX_HOME/skills from a curated list or a GitHub repo path. Use when a user asks to list installable skills, install a curated skill, or install a skill from another repo (including private repos).
-metadata:
-  short-description: Install curated skills from openai/skills or other repos
+description: "Install Codex skills into $CODEX_HOME/skills from a curated list or a GitHub repo path. Use when a user asks to list installable skills, install a curated skill, or install a skill from another repo (including private repos). DO NOT invoke for other unrelated tasks."
+allowed-tools: Bash
+version: 1.0.0
 ---
 
 # Skill Installer
@@ -15,6 +15,12 @@ Use the helper scripts based on the task:
 - Install from another repo when the user provides a GitHub repo/path (including private repos).
 
 Install skills with the helper scripts.
+
+
+## When to invoke
+- When the task requires: Install Codex skills into $CODEX_HOME/skills from a curated list or a GitHub repo path.
+- When executing workflows related to skill-installer.
+- **DO NOT invoke when**: The request is unrelated to skill-installer.
 
 ## Communication
 

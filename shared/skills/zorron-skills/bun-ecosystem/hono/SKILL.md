@@ -1,7 +1,8 @@
 ---
 name: hono
-description: Build web APIs and edge applications with Hono, an ultrafast lightweight framework on Web Standards. Triggers on "hono", "honojs", "create API with hono", "hono middleware", "hono RPC". DO NOT invoke for Express, Fastify, Koa, or non-Hono frameworks.
+description: "Build web APIs and edge applications with Hono, an ultrafast lightweight framework on Web Standards. Triggers on "hono", "honojs", "create API with hono", "hono middleware", "hono RPC". DO NOT invoke for Express, Fastify, Koa, or non-Hono frameworks. This skill covers detailed instructions, workflows, prerequisites, and safety guidelines for the task."
 allowed-tools: Bash
+version: 1.0.0
 ---
 
 # Hono Skill

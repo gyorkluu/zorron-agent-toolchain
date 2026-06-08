@@ -1,6 +1,8 @@
 ---
-name: "imagegen"
+name: imagegen
 description: "Generate or edit raster images when the task benefits from AI-created bitmap visuals such as photos, illustrations, textures, sprites, mockups, or transparent-background cutouts. Use when Codex should create a brand-new image, transform an existing image, or derive visual variants from references, and the output should be a bitmap asset rather than repo-native code or vector. Do not use when the task is better handled by editing existing SVG/vector/code-native assets, extending an established icon or logo system, or building the visual directly in HTML/CSS/canvas."
+allowed-tools: Edit, Write
+version: 1.0.0
 ---
 
 # Image Generation Skill
@@ -53,11 +55,12 @@ Fallback-only docs/resources for CLI mode:
 Local post-processing helper:
 - `$CODEX_HOME/skills/.system/imagegen/scripts/remove_chroma_key.py`: removes a flat chroma-key background from a generated image and writes a PNG/WebP with alpha. Prefer auto-key sampling, soft matte, and despill for antialiased edges.
 
-## When to use
+## When to invoke
 - Generate a new image (concept art, product shot, cover, website hero)
 - Generate a new image using one or more reference images for style, composition, or mood
 - Edit an existing image (inpainting, lighting or weather transformations, background replacement, object removal, compositing, transparent background)
 - Produce many assets or variants for one task
+- **DO NOT invoke when**: The requested task is outside this scope.
 
 ## When not to use
 - Extending or matching an existing SVG/vector icon set, logo system, or illustration library inside the repo

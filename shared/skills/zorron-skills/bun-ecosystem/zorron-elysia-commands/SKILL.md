@@ -1,9 +1,17 @@
 ---
 name: zorron-elysia-commands
-description: Project-local command guide for the Zorron ElysiaJS workspace. Use when Codex needs to start, stop, inspect, test, build, lint, or operate this repository's ElysiaJS/Vite multi-service app, including API Gateway, Leader Worker, OpenCode workers, Vue Dashboard, CLI smoke checks, and service ports.
+description: "Project-local command guide for the Zorron ElysiaJS workspace. Use when Codex needs to start, stop, inspect, test, build, lint, or operate this repository's ElysiaJS/Vite multi-service app, including API Gateway, Leader Worker, OpenCode workers, Vue Dashboard, CLI smoke checks, and service ports. DO NOT invoke for other unrelated tasks."
+allowed-tools: Bash
+version: 1.0.0
 ---
 
 # Zorron ElysiaJS Commands
+
+
+## When to invoke
+- When the task requires: Project-local command guide for the Zorron ElysiaJS workspace.
+- When executing workflows related to zorron-elysia-commands.
+- **DO NOT invoke when**: The request is unrelated to zorron-elysia-commands.
 
 ## Project Layout
 

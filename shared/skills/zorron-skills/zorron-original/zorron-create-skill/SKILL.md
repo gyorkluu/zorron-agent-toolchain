@@ -1,6 +1,8 @@
 ---
 name: zorron-create-skill
 description: "Use this skill to analyze and distill an AI agent's session conversation history, debugging steps, and problem-solving experiences into a reusable agent skill (SKILL.md). Triggers on: 'distill session to skill', 'convert conversation to skill', 'turn this session into a skill', 'extract skill from conversation', 'write skill from debugging logs'. DO NOT invoke for general chat summarization or unrelated markdown writing."
+allowed-tools: Bash
+version: 1.0.0
 ---
 
 # Zorron Create Skill (Session Distillation)
@@ -29,8 +31,8 @@ A meta-skill designed to analyze AI agent conversation histories, extract succes
    - **The Learnings & Traps**: What errors were encountered, and what rules/guardrails prevent those errors from happening again?
 3. **Formulate the Skill Goal**: Define a single, action-oriented verb-noun name for the target skill (e.g., `deploy-docker-ssh`, `debug-postgres-ports`).
 
-*   ✅ **Success**: You have extracted a clear workflow, pre-requisites, command sequences, and guardrails from the session.
-*   🔄 **Fallback**: If the logs are incomplete or ambiguous, interview the user to clarify the successful steps and constraints.
+- ✅ Success: You have extracted a clear workflow, prerequisites, command sequences, and guardrails from the session.
+- 🔄 Fallback: If the logs are incomplete or ambiguous, interview the user to clarify the successful steps and constraints.
 
 ### Phase 2: Draft Multi-Platform Compatible `SKILL.md`
 Generate the `SKILL.md` document matching the standard structure.
@@ -53,7 +55,7 @@ To ensure the skill can be loaded by `agy-cli` (antigravity-cli), `Trae`, `Qwen 
 
 <1-2 sentence description of the skill's purpose>
 
-## When to use this skill
+## When to invoke
 - Scenario 1
 - Scenario 2
 - **DO NOT invoke when**: <exclusion scenario>
@@ -69,8 +71,8 @@ To ensure the skill can be loaded by `agy-cli` (antigravity-cli), `Trae`, `Qwen 
 ### Phase 1: <Phase Title>
 - Step 1...
 - Step 2...
-- ✅ **Success**: <what success looks like>
-- 🔄 **Fallback**: <what to do if steps fail>
+- ✅ Success: <what success looks like>
+- 🔄 Fallback: <what to do if steps fail>
 
 ## ⚠️ Rules & Guardrails
 - **MUST**: <positive constraint, e.g., 'always use double quotes in description if colons are present'>
@@ -82,15 +84,16 @@ To ensure the skill can be loaded by `agy-cli` (antigravity-cli), `Trae`, `Qwen 
 - Edge case: <how to handle typical failures>
 ```
 
-*   ✅ **Success**: The `SKILL.md` file is written with valid YAML frontmatter and standard sections.
-*   🔄 **Fallback**: Use the built-in validator script to find and correct structure or syntax errors.
+- ✅ Success: The `SKILL.md` file is written with valid YAML frontmatter and standard sections.
+- 🔄 Fallback: Use the built-in validator script to find and correct structure or syntax errors.
 
 ### Phase 3: Extract Helper Scripts & References
 If the session workflow involved complex, multi-line scripts or heavy documentation:
 1. **Helper Scripts**: Extract them to `scripts/` (e.g., `scripts/deploy.sh` or `scripts/validate.py`). Make sure they are executable (`chmod +x`).
 2. **On-demand Reference Docs**: Save them to `references/` (e.g., `references/nginx-stream-config.md`) and point to them in `SKILL.md`.
 
-*   ✅ **Success**: Helper files are successfully created and organized under their respective subfolders.
+- ✅ Success: Helper files are successfully created and organized under their respective subfolders.
+- 🔄 Fallback: If extraction fails or is not needed, document the manual commands directly in the `SKILL.md` body.
 
 ### Phase 4: Deploy and Verify
 Install the compiled skill to the corresponding CLI platforms:
@@ -113,7 +116,8 @@ Install the compiled skill to the corresponding CLI platforms:
    cp -R ./<skill-directory> ~/.trae-cn/skills/
    ```
 
-*   ✅ **Success**: Running `npx skills list -g` or checking target directories confirms the skill is registered and loaded by the respective agents.
+- ✅ Success: Running `npx skills list -g` or checking target directories confirms the skill is registered and loaded by the respective agents.
+- 🔄 Fallback: Re-verify installation paths and file permissions, or perform manual copy steps if automatic registration fails.
 
 ---
 

@@ -1,13 +1,15 @@
 ---
-name: browser
-description: Direct browser control via CDP. Use when the user wants to automate, scrape, test, or interact with web pages. Connects to the user's already-running Chrome.
+name: browser-harness
+description: "Direct browser control via CDP. Use when the user wants to automate, scrape, test, or interact with web pages. Connects to the user's already-running Chrome. DO NOT invoke for other unrelated tasks. This skill covers detailed instructions, workflows, prerequisites, and safety guidelines for the task."
+allowed-tools: Bash
+version: 1.0.0
 ---
 
 # browser-harness
 
 Direct browser control via CDP. For task-specific edits, use `agent-workspace/agent_helpers.py` and `agent-workspace/domain-skills/`. For setup, install, or connection problems, read install.md.
 
-## Usage
+## When to invoke
 
 ```bash
 browser-harness -c '
@@ -26,6 +28,7 @@ Available interaction skills:
 Available domain skills:
 - tiktok/upload.md
 - polymarket/scraping.md
+- **DO NOT invoke when**: The requested task is outside this scope.
 
 ## Tool call shape
 

@@ -1,6 +1,8 @@
 ---
 name: port-manager
-description: Manage local development port allocation. Prevent port conflicts when starting or creating projects by checking a centralized port registry fetched from a remote source.
+description: "Manage local development port allocation. Prevent port conflicts when starting or creating projects by checking a centralized port registry fetched from a remote source. DO NOT invoke for other unrelated tasks. This skill covers detailed instructions, workflows, prerequisites, and safety guidelines for the task."
+allowed-tools: Bash
+version: 1.0.0
 ---
 
 # Port Manager Skill
@@ -9,7 +11,7 @@ description: Manage local development port allocation. Prevent port conflicts wh
 
 This skill helps agents allocate conflict-free ports for local development projects. It maintains a centralized port registry that can be hosted remotely (GitHub Gist, S3, raw GitHub file, etc.) and fetched via HTTP. When an agent starts a project, creates a new project, or configures services, it **MUST** consult this registry first to avoid port collisions.
 
-## When to Use This Skill
+## When to invoke
 
 Trigger this skill when the user asks to:
 - Create a new project (any web/backend project)
@@ -18,6 +20,7 @@ Trigger this skill when the user asks to:
 - Set up Docker containers or docker-compose with port mappings
 - Add a new microservice to an existing project
 - Change or reassign ports for an existing project
+- **DO NOT invoke when**: The requested task is outside this scope.
 
 ## Core Workflow
 

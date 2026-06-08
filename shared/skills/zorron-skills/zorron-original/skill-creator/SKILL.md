@@ -1,13 +1,19 @@
 ---
 name: skill-creator
-description: Guide for creating effective skills. This skill should be used when users want to create a new skill (or update an existing skill) that extends Codex's capabilities with specialized knowledge, workflows, or tool integrations.
-metadata:
-  short-description: Create or update a skill
+description: "Guide for creating effective skills. This skill should be used when users want to create a new skill (or update an existing skill) that extends Codex's capabilities with specialized knowledge, workflows, or tool integrations. DO NOT invoke for other unrelated tasks."
+allowed-tools: Bash, Edit, Read, Write
+version: 1.0.0
 ---
 
 # Skill Creator
 
 This skill provides guidance for creating effective skills.
+
+
+## When to invoke
+- When the task requires: Guide for creating effective skills.
+- When executing workflows related to skill-creator.
+- **DO NOT invoke when**: The request is unrelated to skill-creator.
 
 ## About Skills
 
@@ -57,7 +63,7 @@ Prefer raw artifacts such as example prompts, outputs, diffs, logs, or traces. G
 
 Every skill consists of a required SKILL.md file and optional bundled resources:
 
-```
+```text
 skill-name/
 ├── SKILL.md (required)
 │   ├── YAML frontmatter metadata (required)
@@ -169,7 +175,7 @@ Codex loads FORMS.md, REFERENCE.md, or EXAMPLES.md only when needed.
 
 For Skills with multiple domains, organize content by domain to avoid loading irrelevant context:
 
-```
+```text
 bigquery-skill/
 ├── SKILL.md (overview and navigation)
 └── reference/
@@ -183,7 +189,7 @@ When a user asks about sales metrics, Codex only reads sales.md.
 
 Similarly, for skills supporting multiple frameworks or variants, organize by variant:
 
-```
+```text
 cloud-deploy/
 ├── SKILL.md (workflow + provider selection)
 └── references/
@@ -310,7 +316,7 @@ scripts/init_skill.py my-skill --path ~/work/skills --resources scripts --exampl
 The script:
 
 - Creates the skill directory at the specified path
-- Generates a SKILL.md template with proper frontmatter and TODO placeholders
+- Generates a SKILL.md template with proper frontmatter and to-do placeholders
 - Creates `agents/openai.yaml` using agent-generated `display_name`, `short_description`, and `default_prompt` passed via `--interface key=value`
 - Optionally creates resource directories based on `--resources`
 - Optionally adds example files when `--examples` is set
