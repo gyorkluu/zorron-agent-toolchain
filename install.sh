@@ -206,16 +206,6 @@ fi
 # 确保 Zorron 本地目录存在
 mkdir -p "$ZORRON_HOME"
 
-# 检查并拉取子模块
-if [[ -d "${ZORRON_ROOT}/shared/skills/zorron-skills" ]] && [[ ! -f "${ZORRON_ROOT}/shared/skills/zorron-skills/README.md" ]]; then
-    log_info "🔄 检测到 Skill 子模块未初始化，正在拉取..."
-    if command -v git &>/dev/null; then
-        git submodule update --init --recursive || log_warn "子模块自动拉取失败，请检查网络连接"
-    else
-        log_warn "未检测到 git 命令，无法自动拉取子模块"
-    fi
-fi
-
 # ---- 干运行提示 ----
 if $DRY_RUN; then
     log_warn "🔍 模拟运行模式 — 不会实际修改任何文件"

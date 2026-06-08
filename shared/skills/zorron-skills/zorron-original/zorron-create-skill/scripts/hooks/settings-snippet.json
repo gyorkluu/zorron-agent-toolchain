@@ -1,0 +1,28 @@
+{
+  "_comment": "Add this PreToolUse block to your ~/.claude/settings.json to activate the secrets scanner hook.",
+  "_install_path": "~/.claude/settings.json",
+  "PreToolUse": [
+    {
+      "matcher": "Write|Edit|MultiEdit",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash ~/.claude/skills/zorron-create-skill/scripts/hooks/check_secrets.sh",
+          "timeout": 15
+        }
+      ]
+    }
+  ],
+  "PostToolUse": [
+    {
+      "matcher": "Bash",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash ~/.claude/skills/zorron-create-skill/scripts/hooks/audit_log.sh",
+          "timeout": 10
+        }
+      ]
+    }
+  ]
+}

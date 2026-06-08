@@ -66,7 +66,7 @@ chmod +x install.sh scripts/zorron
 - `--host <主机名>` 或 `-H <主机名>`：强行指定当前部署的主机名（用于跨机器模拟调试主机覆盖配置）。
 
 **部署步骤逻辑**：
-- **第一步 (环境自愈)**：检查共享技能子模块 `shared/skills/zorron-skills` 是否拉取。若为空，自动拉取最新的技能内容。
+- **第一步 (自检依赖)**：检查系统是否安装了 Git、Python 3、Bun、jq 和 envsubst。如果缺失，会自动尝试使用包管理器直接安装，保障环境完整度。
 - **第二步 (工具扫描)**：智能扫描已安装的工具（如 `opencode`、`claude-code`）。
 - **第三步 (配置部署)**：部署对应工具配置并应用主机覆盖配置，对 `.json`、`.yaml`、`.md`、`.conf` 等配置文件中的 `{{HOME}}`、`{{HOSTNAME}}` 等环境变量占位符进行自动渲染。
 - **第四步 (MCP 合并)**：合并全局 `shared/mcp-servers.json` 与独立文件，生成对应的 MCP 配置（缺少 `jq` 时自动降级）。
@@ -88,7 +88,7 @@ chmod +x install.sh scripts/zorron
 - **示例**：`./scripts/zorron add skill test-helper zorron-skills/frontend`
 - **参数说明**：
   - `<Skill名称>`（必需）：Skill 的 kebab-case 英文标识（如 `react-helper`）。
-  - `[分类路径]`（可选）：子模块相对目录路径。默认为 `zorron-skills/zorron-original`。
+  - `[分类路径]`（可选）：技能存放的相对目录路径。默认为 `zorron-skills/zorron-original`。
 - **动作详情**：在 `shared/skills/[分类路径]/<Skill名称>/` 目录下生成最符合规范的 `SKILL.md` 骨架模板，该模板带有标准的 YAML 头部信息和 "When to invoke"、“Rules & Guardrails” 等字段。
 
 #### 📋 列出已配置的 Skill
@@ -321,7 +321,7 @@ echo '{...}' > hosts/$(hostname -s)/override/tools/claude-code/settings.json
 
 - **必需**:
   - **Bash 4+** (脚本执行环境)
-  - **Git** (拉取与同步共享技能子模块)
+  - **Git** (同步更新代码仓库)
   - **Python 3** (执行 Skill 静态结构合法性校验)
   - **Bun 运行时** (执行轻量级 MCP 服务及运行本地开发微服务/BFF)
 - **推荐**:
@@ -340,26 +340,23 @@ Zorron Agent Toolchain 鼓励开发者 Fork 并定制专属于您（或您团队
 
 ### 2. 🔄 如何同步上游（主仓库）的最新修改？
 
-当主仓库更新后，由于本项目由 **主工具链仓库** 和 **共享技能子模块 (`zorron-skills`)** 两部分组成，同步时需要根据您的定制方式分别处理。
+当主仓库更新后，您可以通过以下方式轻松地将上游最新的配置和 Skills 同步到您的 Fork 分支中。由于 `zorron-skills` 已集成作为普通目录，您不需要处理任何 Git 子模块的复杂操作，只需拉取更新即可：
 
 ---
 
-#### 📦 第一部分：同步主工具链仓库 (`zorron-agent-toolchain`)
-
-##### 💡 方式一：通过 GitHub Web 页面一键同步 (最简单)
+#### 💡 方式一：通过 GitHub Web 页面一键同步 (推荐，最简单)
 如果您使用 GitHub 托管您的 Fork 仓库：
 1. 打开您的 GitHub Fork 仓库页面（例如：`https://github.com/您的用户名/zorron-agent-toolchain`）。
 2. 在代码区域上方，找到 **"Sync fork"** 下拉菜单按钮。
-3. 点击 **"Sync fork"**，然后点击 **"Update branch"**。GitHub 会在云端自动将主仓库的最新提交合并进您的分支。
-4. 回到您的本地开发机，拉取代码并更新子模块：
+3. 点击 **"Sync fork"**，然后点击 **"Update branch"**。GitHub 会在云端自动将主仓库的最新提交（包括最新的脚本和所有共享 Skills）合并进您的分支。
+4. 回到您的本地开发机，直接拉取代码并部署：
    ```bash
    cd ~/zorron-agent-toolchain
    git pull
-   git submodule update --init --recursive
    ./install.sh
    ```
 
-##### 💻 方式二：通过 Git 命令行同步 (纯终端开发)
+#### 💻 方式二：通过 Git 命令行同步 (纯终端开发)
 如果是在纯终端环境，或希望手动处理合并：
 ```bash
 # 1. 进入本地工具链目录
@@ -373,57 +370,12 @@ git fetch upstream
 git checkout main
 git merge upstream/main
 
-# 4. 更新子模块到上游指定的 Commit
-git submodule update --init --recursive
-
-# 5. 推送合并后的最新状态到您自己的个人 Fork 远程库
+# 4. 推送合并后的最新状态到您自己的个人 Fork 远程库
 git push origin main
+
+# 5. 执行部署应用配置
+./install.sh
 ```
-
----
-
-#### 📚 第二部分：同步共享技能子模块 (`zorron-skills`)
-
-同步子模块（`shared/skills/zorron-skills`）取决于您**是否 Fork 了技能仓库**：
-
-##### 场景 A：您直接使用上游技能库（没有 Fork `zorron-skills`）
-如果您的 `.gitmodules` 指向的是原作者的 `zorron-skills` 库，而您只想获取最新的 Skills：
-* **方式 1**：如果主工具链仓库已经更新了子模块指针，您在主仓库下运行 `git submodule update --init --recursive` 即可。
-* **方式 2**：如果想在主仓库更新前，强行拉取 `zorron-skills` 远程仓库的最新内容，请在工具链根目录下运行：
-  ```bash
-  git submodule update --remote --merge
-  ```
-  该命令会自动拉取最新的技能并合并到本地目录。
-
-##### 场景 B：您也 Fork 了技能库，并希望同步上游技能更新
-如果您将 `zorron-skills` 子模块也 Fork 到了您自己的账号下（例如 `https://github.com/您的用户名/zorron-skills.git`）：
-1. **先在 GitHub Web 页面上同步您的技能库 Fork**：
-   - 打开您的 `zorron-skills` Fork 仓库页面。
-   - 点击 **"Sync fork"** -> **"Update branch"**.
-2. **在本地拉取更新并提交到您的工具链仓库**：
-   ```bash
-   # 进入子模块目录
-   cd ~/zorron-agent-toolchain/shared/skills/zorron-skills
-   
-   # 拉取您 Fork 仓库的最新代码
-   git pull origin main
-   
-   # 返回工具链根目录
-   cd ~/zorron-agent-toolchain
-   
-   # 将工具链对子模块的指针更新，并推送到您的工具链 Fork 中
-   git add shared/skills/zorron-skills
-   git commit -m "chore: sync skills submodule to latest fork commit"
-   git push origin main
-   ```
-3. **或者，直接在本地子模块中添加上游源进行合并**：
-   ```bash
-   cd ~/zorron-agent-toolchain/shared/skills/zorron-skills
-   git remote add upstream https://github.com/gyorkluu/zorron-skills.git   # (只需配置一次)
-   git fetch upstream
-   git merge upstream/main
-   git push origin main
-   ```
 
 ### 3. 🛡️ 最佳实践：如何避免与上游发生合并冲突 (Conflict)？
 为了在后续同步上游更新时享受 "零冲突" 的平滑体验，建议您遵循以下**解耦设计规则**进行个人定制：
