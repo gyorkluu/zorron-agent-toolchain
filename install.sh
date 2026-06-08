@@ -283,8 +283,10 @@ log_info "📚 部署共享 Skills..."
 SHARED_SKILLS_DIR="${ZORRON_ROOT}/shared/skills"
 
 if [[ -d "$SHARED_SKILLS_DIR" ]]; then
-    for skill_dir in "$SHARED_SKILLS_DIR"/*/; do
-        [[ -d "$skill_dir" ]] || continue
+    # 递归查找所有包含 SKILL.md/skill.md 的目录，排除 .git
+    find "$SHARED_SKILLS_DIR" -type d -name ".git" -prune -o -type f \( -name "SKILL.md" -o -name "skill.md" \) -print | while read -r skill_file; do
+        [[ -f "$skill_file" ]] || continue
+        skill_dir=$(dirname "$skill_file")
         skill_name=$(basename "$skill_dir")
 
         if $DRY_RUN; then

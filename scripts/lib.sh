@@ -192,6 +192,12 @@ merge_mcp_configs() {
     fi
 
     # 逐步合并所有配置
+    if ! command -v jq &>/dev/null; then
+        log_warn "未检测到 jq，跳过合并，直接使用第一个 MCP 配置"
+        cp "${all_configs[0]}" "$output"
+        return 0
+    fi
+
     local merged="${all_configs[0]}"
     for ((i = 1; i < ${#all_configs[@]}; i++)); do
         local tmp_out

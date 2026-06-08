@@ -56,36 +56,46 @@ EOF
 # ---- 命令: add skill ----
 cmd_add_skill() {
     local name="${1:?请指定 Skill 名称}"
-    local skill_dir="${ZORRON_ROOT}/shared/skills/${name}"
+    local category="${2:-zorron-skills/zorron-original}"
+    
+    # 去除首尾斜杠
+    category="${category#/}"
+    category="${category%/}"
+    
+    local skill_dir="${ZORRON_ROOT}/shared/skills/${category}/${name}"
 
     if [[ -d "$skill_dir" ]]; then
-        log_error "Skill 已存在: $name"
+        log_error "Skill 已存在: ${category}/${name}"
         exit 1
     fi
 
     mkdir -p "$skill_dir"
 
     cat > "$skill_dir/SKILL.md" <<EOF
+---
+name: ${name}
+description: "在此编写 Skill 的简短描述，用于 Agent 进行路由分发。"
+version: 1.0.0
+---
+
 # Skill: ${name}
 
-## 描述
-在此描述这个 Skill 的功能和使用场景。
-
-## 触发条件
+## When to invoke
 - 当用户请求...时自动激活
+- **DO NOT invoke when**: 
 
-## 指令
-1. 在此编写具体的执行指令
-2. 每条指令应该清晰明确
+## 📋 Execution Workflow
+### Phase 1: 
+- Step 1...
+- ✅ Success: 
+- 🔄 Fallback: 
 
-## 输出格式
-描述期望的输出格式和内容结构。
-
-## 注意事项
-- 列出使用此 Skill 时需要注意的事项
+## ⚠️ Rules & Guardrails
+- MUST: 
+- MUST NOT: 
 EOF
 
-    log_ok "Skill 已创建: shared/skills/${name}/"
+    log_ok "Skill 已创建: shared/skills/${category}/${name}/"
     log_info "请编辑 SKILL.md 来定义 Skill 的行为"
 }
 
@@ -296,17 +306,39 @@ cmd_list() {
     # 列出 Skills
     echo ""
     echo -e "${C_BOLD}📚 Skills (shared/skills/):${C_RESET}"
-    for skill_dir in "${ZORRON_ROOT}/shared/skills"/*/; do
-        [[ -d "$skill_dir" ]] || continue
-        skill_name=$(basename "$skill_dir")
-        if [[ -f "$skill_dir/SKILL.md" ]]; then
-            # 提取描述行
-            desc=$(grep -m1 "描述" "$skill_dir/SKILL.md" | sed 's/.*描述[：:]*//' | xargs 2>/dev/null || echo "")
-            echo "  ✅  $skill_name  ${desc:+- $desc}"
-        else
-            echo "  ⚠️  $skill_name  (缺少 SKILL.md)"
-        fi
-    done
+    if [[ -d "${ZORRON_ROOT}/shared/skills" ]]; then
+        find "${ZORRON_ROOT}/shared/skills" -type d -name ".git" -prune -o -type f \( -name "SKILL.md" -o -name "skill.md" \) -print | while read -r skill_file; do
+            [[ -f "$skill_file" ]] || continue
+            skill_dir=$(dirname "$skill_file")
+            skill_name=$(basename "$skill_dir")
+            
+            # 计算分类相对路径
+            rel_path=$(python3 -c "import os; print(os.path.relpath('$skill_dir', '${ZORRON_ROOT}/shared/skills'))" 2>/dev/null || echo "")
+            category=$(dirname "$rel_path")
+            if [[ "$category" == "." ]]; then
+                category=""
+            fi
+            
+            # 提取描述 (从 frontmatter 或内容)
+            desc=$(grep -i "^description:" "$skill_file" | head -n1 | sed -E 's/^description:[[:space:]]*//' | tr -d '"' | tr -d "'" | xargs 2>/dev/null || echo "")
+            if [[ "$desc" == "|" || "$desc" == "|-" || "$desc" == ">" ]]; then
+                desc=$(grep -i -A 1 "^description:" "$skill_file" | tail -n1 | xargs 2>/dev/null || echo "")
+            fi
+            if [[ -z "$desc" ]]; then
+                desc=$(grep -m1 "描述" "$skill_file" | sed 's/.*描述[：:]*//' | xargs 2>/dev/null || echo "")
+            fi
+            
+            if [[ ${#desc} -gt 65 ]]; then
+                desc="${desc:0:62}..."
+            fi
+
+            if [[ -n "$category" ]]; then
+                echo -e "  ✅  ${C_GREEN}${category}/${C_RESET}${skill_name} ${desc:+- $desc}"
+            else
+                echo -e "  ✅  ${skill_name} ${desc:+- $desc}"
+            fi
+        done
+    fi
 
     # 列出 MCP 服务
     echo ""
