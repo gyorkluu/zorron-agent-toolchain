@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-scaffold.py — Generate a new Claude Code skill directory from answers
+scaffold.py — Generate a new Claude Code skill directory or update an existing one
 
 Usage:
     python scripts/scaffold.py --name <skill-name> --output <dir>
+    python scripts/scaffold.py --update <skill-dir> [options]
     python scripts/scaffold.py --package <skill-dir> --output <dist-dir>
     python scripts/scaffold.py --interactive
 
@@ -14,6 +15,12 @@ Options:
     --interactive      Step-by-step prompts (default when no --name given)
     --with-hooks       Include a starter hooks/ directory and check_secrets.sh
     --with-references  Include a references/ directory with placeholder files
+    --update <dir>     Update an existing skill directory
+    --gotcha <g>       Gotcha/trap to append to the skill
+    --rule <r>         Rule/guardrail to append to the skill
+    --trigger <t>      Trigger scenario to append to the skill
+    --description <d>  Update the skill description in frontmatter
+    --version-bump <b> Bump the version (patch, minor, major)
 
 Exit codes:
     0 = success
@@ -36,7 +43,7 @@ from datetime import date
 SKILL_MD_TEMPLATE = """\
 ---
 name: {name}
-description: {description}
+description: "{description}"
 version: 1.0.0
 argument-hint: {argument_hint}
 allowed-tools: [{allowed_tools}]
@@ -87,13 +94,17 @@ allowed-tools: [{allowed_tools}]
 - **SHOULD**: {should_rule}
 - **Quality Gate**: `{quality_gate}`
 
+## ⚠️ Gotchas & Tricky Details (常踩的坑)
+- **Gotcha 1**: {gotcha_1}
+- **Gotcha 2**: {gotcha_2}
+
 ## 📤 Output Specification
 - All code blocks MUST include language tags (`bash`, `python`, `json`, etc.)
 - Deliverables: {deliverables}
 - Validation: `{validation_cmd}`
 
 ## 💡 Examples & Edge Cases
-- **Typical**: `"{typical_example}"`
+- **Typical**: "{typical_example}"
 - **Limitations**: {limitations}
 """
 
@@ -195,6 +206,8 @@ def interactive_answers() -> dict:
     must_rule = prompt("Primary MUST rule", "Validate all inputs before processing")
     should_rule = prompt("Primary SHOULD rule", "Provide a one-liner verification command in output")
     quality_gate = prompt("Quality gate command", "echo 'No automated gate — verify manually'")
+    gotcha_1 = prompt("Gotcha 1 (Tricky trap/implicit knowledge)", "Staging returns 200 but doesn't mean success")
+    gotcha_2 = prompt("Gotcha 2 (Tricky trap/implicit knowledge)", "Configuration must use strict double-quotes in frontmatter")
     deliverables = prompt("Output deliverables", "Modified files, summary report")
     validation_cmd = prompt("Validation command", "echo 'Done'")
     typical_example = prompt("Typical user prompt example", f"Please {summary.lower().rstrip('.')}")
@@ -208,6 +221,7 @@ def interactive_answers() -> dict:
         allowed_tools=allowed_tools, runtime=runtime, assumptions=assumptions,
         skill_exclusions=skill_exclusions, argument_hint=argument_hint,
         must_rule=must_rule, should_rule=should_rule, quality_gate=quality_gate,
+        gotcha_1=gotcha_1, gotcha_2=gotcha_2,
         deliverables=deliverables, validation_cmd=validation_cmd,
         typical_example=typical_example, limitations=limitations,
         with_hooks=with_hooks, with_references=with_references,
@@ -222,10 +236,12 @@ def scaffold(answers: dict, output_dir: Path, with_hooks: bool = False, with_ref
     (skill_dir / "scripts").mkdir(exist_ok=True)
 
     # SKILL.md
+    # Escape quotes inside description for YAML safety
+    answers["description"] = answers["description"].replace('"', '\\"')
     skill_md = SKILL_MD_TEMPLATE.format(**answers)
     (skill_dir / "SKILL.md").write_text(skill_md)
 
-    # Minimal validate.py stub (full version is in the zorron-create-skill scripts/)
+    # Minimal validate.py stub
     validate_stub = dedent(f"""\
         #!/usr/bin/env python3
         \"\"\"validate.py — copy the full version from zorron-create-skill/scripts/validate.py\"\"\"
@@ -280,6 +296,162 @@ def scaffold(answers: dict, output_dir: Path, with_hooks: bool = False, with_ref
     return skill_dir
 
 
+def update_skill(
+    skill_dir: Path,
+    gotcha: str = None,
+    rule: str = None,
+    trigger: str = None,
+    description: str = None,
+    version_bump: str = None
+) -> Path:
+    """Updates an existing SKILL.md file with new gotchas, rules, triggers, etc."""
+    skill_md_path = skill_dir / "SKILL.md"
+    if not skill_md_path.exists():
+        print(f"Error: {skill_md_path} does not exist.", file=sys.stderr)
+        sys.exit(1)
+
+    content = skill_md_path.read_text(encoding="utf-8")
+
+    # Simple frontmatter parser
+    parts = content.split("---", 2)
+    if len(parts) < 3:
+        print("Error: SKILL.md does not have valid frontmatter.", file=sys.stderr)
+        sys.exit(1)
+
+    raw_fm = parts[1].strip()
+    body = parts[2].strip()
+
+    # Parse YAML-like frontmatter
+    fm = {}
+    for line in raw_fm.splitlines():
+        if ":" in line:
+            key, val = line.split(":", 1)
+            fm[key.strip()] = val.strip().strip('"').strip("'")
+
+    # Modify frontmatter
+    if description:
+        fm["description"] = description
+
+    if version_bump:
+        current_version = fm.get("version", "1.0.0")
+        try:
+            major, minor, patch = map(int, current_version.split("."))
+            if version_bump == "major":
+                major += 1
+                minor = 0
+                patch = 0
+            elif version_bump == "minor":
+                minor += 1
+                patch = 0
+            else:  # patch
+                patch += 1
+            fm["version"] = f"{major}.{minor}.{patch}"
+        except Exception:
+            fm["version"] = "1.0.1"
+
+    # Reconstruct frontmatter
+    new_fm_lines = ["---"]
+    for k, v in fm.items():
+        # Enforce quoting for description
+        if k == "description" or ":" in v or "'" in v or '"' in v:
+            escaped_v = v.replace('"', '\\"')
+            new_fm_lines.append(f"{k}: \"{escaped_v}\"")
+        elif k == "allowed-tools":
+            new_fm_lines.append(f"{k}: {v}")
+        else:
+            new_fm_lines.append(f"{k}: {v}")
+    new_fm_lines.append("---")
+    new_fm_str = "\n".join(new_fm_lines)
+
+    # Update Body Sections
+    # Split the body by double hashes
+    sections = re.split(r'\n(##\s+[^#\n]+)', "\n" + body)
+    title_part = sections[0].strip()
+
+    section_map = {}
+    for i in range(1, len(sections), 2):
+        header = sections[i].strip()
+        clean_header = re.sub(r'[^a-zA-Z0-9\s]', '', header).lower().strip()
+        
+        # Mapping to standard keys
+        if 'gotcha' in clean_header:
+            key = 'gotchas'
+        elif 'rules' in clean_header:
+            key = 'rules'
+        elif 'invoke' in clean_header:
+            key = 'invoke'
+        elif 'prerequisites' in clean_header:
+            key = 'prerequisites'
+        elif 'toolchain' in clean_header:
+            key = 'toolchain'
+        elif 'workflow' in clean_header:
+            key = 'workflow'
+        elif 'output' in clean_header:
+            key = 'output'
+        elif 'examples' in clean_header:
+            key = 'examples'
+        else:
+            key = clean_header
+
+        content_part = sections[i + 1].strip()
+        section_map[key] = (header, content_part)
+
+    # Append new gotcha
+    if gotcha:
+        header, gotcha_content = section_map.get('gotchas', ('## ⚠️ Gotchas & Tricky Details (常踩的坑)', ''))
+        bullet = f"\n- **Gotcha**: {gotcha}"
+        gotcha_content = gotcha_content.rstrip() + bullet
+        section_map['gotchas'] = (header, gotcha_content)
+
+    # Append new rule
+    if rule:
+        header, rule_content = section_map.get('rules', ('## ⚠️ Rules & Guardrails', ''))
+        bullet = f"\n- **Rule**: {rule}"
+        rule_content = rule_content.rstrip() + bullet
+        section_map['rules'] = (header, rule_content)
+
+    # Append new trigger
+    if trigger:
+        header, invoke_content = section_map.get('invoke', ('## When to invoke', ''))
+        lines = invoke_content.splitlines()
+        do_not_line = None
+        other_lines = []
+        for line in lines:
+            if "DO NOT" in line.upper():
+                do_not_line = line
+            else:
+                other_lines.append(line)
+        other_lines.append(f"- {trigger}")
+        if do_not_line:
+            other_lines.append(do_not_line)
+        invoke_content = "\n".join(other_lines)
+        section_map['invoke'] = (header, invoke_content)
+
+    # Reassemble body
+    standard_order = ['invoke', 'prerequisites', 'toolchain', 'workflow', 'rules', 'gotchas', 'output', 'examples']
+    new_body_parts = [title_part]
+    used_keys = set()
+
+    for key in standard_order:
+        if key in section_map:
+            header, content_part = section_map[key]
+            new_body_parts.append(f"\n\n{header}\n{content_part}")
+            used_keys.add(key)
+
+    # Append any remaining custom sections
+    for key, (header, content_part) in section_map.items():
+        if key not in used_keys:
+            new_body_parts.append(f"\n\n{header}\n{content_part}")
+
+    new_body_str = "".join(new_body_parts).strip()
+
+    # Save back
+    new_content = f"{new_fm_str}\n\n{new_body_str}\n"
+    skill_md_path.write_text(new_content, encoding="utf-8")
+    print(f"✅  Updated skill at: {skill_md_path}")
+    return skill_md_path
+
+
 def package(skill_dir: Path, output_dir: Path) -> Path:
     """Zip a skill directory into a .skill file."""
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -297,13 +469,21 @@ def package(skill_dir: Path, output_dir: Path) -> Path:
 # ─── Entry point ───────────────────────────────────────────────────────────────
 
 def main():
-    parser = argparse.ArgumentParser(description="Scaffold a new Claude Code skill")
+    parser = argparse.ArgumentParser(description="Scaffold or update a Claude Code skill")
     parser.add_argument("--name", help="Skill kebab-case name")
     parser.add_argument("--output", default=".", help="Output directory")
     parser.add_argument("--package", metavar="SKILL_DIR", help="Package existing skill dir into .skill")
     parser.add_argument("--interactive", action="store_true")
     parser.add_argument("--with-hooks", action="store_true")
     parser.add_argument("--with-references", action="store_true", default=True)
+    
+    # Update options
+    parser.add_argument("--update", metavar="SKILL_DIR", help="Update an existing skill directory")
+    parser.add_argument("--gotcha", help="Gotcha to append to the skill")
+    parser.add_argument("--rule", help="Rule/guardrail to append to the skill")
+    parser.add_argument("--trigger", help="Trigger scenario to append to the skill")
+    parser.add_argument("--description", help="Update the skill description")
+    parser.add_argument("--version-bump", choices=["patch", "minor", "major"], help="Bump the skill version")
     args = parser.parse_args()
 
     output_dir = Path(args.output)
@@ -314,6 +494,21 @@ def main():
             print(f"Error: {skill_dir} is not a directory", file=sys.stderr)
             sys.exit(1)
         package(skill_dir, output_dir)
+        return
+
+    if args.update:
+        skill_dir = Path(args.update)
+        if not skill_dir.is_dir():
+            print(f"Error: {skill_dir} is not a directory", file=sys.stderr)
+            sys.exit(1)
+        update_skill(
+            skill_dir,
+            gotcha=args.gotcha,
+            rule=args.rule,
+            trigger=args.trigger,
+            description=args.description,
+            version_bump=args.version_bump
+        )
         return
 
     if args.name:
@@ -336,6 +531,8 @@ def main():
             must_rule="Validate all inputs before processing",
             should_rule="Provide a verification command in output",
             quality_gate="echo 'verify manually'",
+            gotcha_1="Ensure you handle edge cases and log details",
+            gotcha_2="Be careful not to overwrite user config without prompt",
             deliverables="Modified files, summary",
             validation_cmd="echo 'Done'",
             typical_example=f"{title_case(name)}",

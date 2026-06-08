@@ -90,6 +90,8 @@ def validate(skill_path: Path) -> dict:
     errors: list[str] = []
     warnings: list[str] = []
 
+    skill_path = skill_path.resolve()
+
     # 1. File naming
     if skill_path.name != "SKILL.md":
         errors.append(f"File must be named exactly 'SKILL.md' (case-sensitive), got: {skill_path.name}")
@@ -158,6 +160,12 @@ def validate(skill_path: Path) -> dict:
             if "DO NOT" not in invoke_text.upper():
                 warnings.append("'## When to invoke' section lacks a 'DO NOT invoke' exclusion clause.")
 
+    # 9b. Gotchas check
+    gotchas_headers = ["## ⚠️ Gotchas & Tricky Details", "## ⚠️ Gotchas", "## Gotchas", "## ⚠️ Gotchas & Traps", "## Gotchas & Traps", "## ⚠️ Gotchas & Tricky Details (常踩的坑)"]
+    has_gotchas = any(h.lower() in body.lower() for h in gotchas_headers)
+    if not has_gotchas:
+        warnings.append("Body missing '## ⚠️ Gotchas & Tricky Details' section. Highly recommended by Anthropic to document implicit knowledge and traps.")
+
     # 10. Body line count
     body_lines = len(body.splitlines())
     if body_lines > BODY_MAX_LINES:
@@ -198,6 +206,16 @@ def validate(skill_path: Path) -> dict:
                 f"Found {len(phases)} Phase(s) but only {fallback_count} '🔄 Fallback' marker(s). "
                 "Each phase should have a fallback strategy."
             )
+
+    # 15. Context Engineering file link validation
+    # Extract links of form [text](references/file) or [text](scripts/file)
+    links = re.findall(r'\[[^\]]*\]\(((?:references|scripts|assets)/[^)]+)\)', body_outside_blocks)
+    for link in links:
+        # Strip anchors like #L123 or query parameters
+        link_path = link.split('#')[0].split('?')[0]
+        full_link_path = skill_path.parent / link_path
+        if not full_link_path.exists():
+            errors.append(f"Linked file does not exist in skill directory: '{link_path}'")
 
     passed = len(errors) == 0
     return {
