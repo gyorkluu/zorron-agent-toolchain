@@ -299,26 +299,36 @@ Zorron Agent Toolchain 鼓励开发者 Fork 并定制专属于您（或您团队
 - **长期独立维护**：Fork 本仓库后，您**不需要**向原作者仓库（Upstream）提交 Pull Request / 变更合并。您完全可以将其作为一个独立项目，长期维护并推送到您自己的 Fork 仓库。
 - **多设备配置同步**：在您的多台开发设备上（如公司电脑、个人 Mac、云服务器），直接 Clone 您的 **Fork 仓库**，这样任何一处配置更改，通过 `git commit & push` 之后，在其他设备运行 `git pull && ./install.sh` 即可瞬间同步环境。
 
-### 2. 🔄 如何同步上游（作者仓库）的最新功能？
-当上游仓库增加了新的 Agent 支持（如对接了新推出的开发工具）、修复了核心部署 Bug、或者优化了脚本时，您可以通过以下标准 Git 工作流，安全地将上游的新特性拉取并合并到您的个人 Fork 分支中，而不会破坏您的个人配置：
+### 2. 🔄 如何同步上游（主仓库）的最新修改？
+当主仓库更新后，您可以通过以下两种方式将最新的变更合并同步到您自己的 Fork 分支中：
 
+#### 💡 方式一：通过 GitHub Web 页面一键同步 (推荐，最简单)
+如果您使用 GitHub 托管您的 Fork 仓库，甚至不需要在本地配置额外的 remote：
+1. 打开您的 GitHub Fork 仓库页面（例如：`https://github.com/您的用户名/zorron-agent-toolchain`）。
+2. 在代码区域上方，找到 **"Sync fork"** 下拉菜单按钮。
+3. 点击 **"Sync fork"**，然后点击 **"Update branch"**。GitHub 会在云端自动将主仓库的最新提交合并进您的分支。
+4. 回到您的本地开发机，只需在工具链目录运行拉取即可同步到本地：
+   ```bash
+   git pull && git submodule update --init --recursive && ./install.sh
+   ```
+
+#### 💻 方式二：通过 Git 命令行同步 (适合本地/终端开发)
+如果是在纯终端环境，或者希望手动处理合并：
 ```bash
 # 1. 进入本地工具链目录
 cd ~/zorron-agent-toolchain
 
-# 2. 将作者的源仓库添加为 "upstream" 远程源 (只需执行一次)
+# 2. 将作者的源仓库添加为 "upstream" 远程源 (只需配置一次)
 git remote add upstream https://github.com/gyorkluu/zorron-agent-toolchain.git
 
-# 3. 获取上游仓库的最新修改
+# 3. 获取上游主仓库的最新修改
 git fetch upstream
 
-# 4. 确保您在本地 main 分支上
+# 4. 确保您在本地 main 分支上，并执行合并
 git checkout main
-
-# 5. 合并上游 main 分支到您的本地 main 分支
 git merge upstream/main
 
-# 6. 推送合并后的最新状态到您自己的个人 Fork 远程库
+# 5. 推送合并后的最新状态到您自己的个人 Fork 远程库
 git push origin main
 ```
 
