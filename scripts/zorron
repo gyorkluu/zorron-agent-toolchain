@@ -33,9 +33,19 @@ ${C_BOLD}用法:${C_RESET}
 
 ${C_BOLD}命令:${C_RESET}
   ${C_GREEN}add${C_RESET}
-    add skill <名称>          创建新的 Skill 模板
+    add skill <名称> [分类]   创建新的 Skill 模板
     add mcp <名称>            添加 MCP 服务条目
     add tool <名称>           创建新工具配置模板
+
+  ${C_GREEN}remove${C_RESET} / ${C_GREEN}rm${C_RESET}
+    remove skill <名称> [分类]删除指定的 Skill 及其部署链接
+    remove mcp <名称>         删除指定的 MCP 服务条目
+    remove tool <名称>        删除指定的工具配置模板
+
+  ${C_GREEN}edit${C_RESET}
+    edit skill <名称> [分类]  编辑指定的 Skill Markdown 文件
+    edit mcp <名称>           编辑指定的 MCP 服务 JSON 配置
+    edit tool <名称>          编辑指定的工具 target.conf
 
   ${C_GREEN}init${C_RESET}                        初始化本地覆盖和密钥示例
   ${C_GREEN}list${C_RESET}                        列出已配置的工具、Skills、MCP 服务
@@ -45,9 +55,8 @@ ${C_BOLD}命令:${C_RESET}
 
 ${C_BOLD}示例:${C_RESET}
   zorron add skill pdf-reader     # 创建 pdf-reader Skill
-  zorron add mcp filesystem       # 添加 filesystem MCP 服务
-  zorron add tool qwen-code       # 创建 qwen-code 工具模板
-  zorron init                     # 初始化本地配置
+  zorron edit skill pdf-reader    # 编辑 pdf-reader Skill
+  zorron rm skill pdf-reader      # 删除 pdf-reader Skill
   zorron list                     # 查看所有配置
   zorron deploy                   # 部署配置
 EOF
@@ -211,6 +220,142 @@ EOF
     log_step "1. 编辑 tools/${name}/target.conf 确认部署路径"
     log_step "2. 编辑 tools/${name}/config.json 填入实际配置"
     log_step "3. 运行 ./install.sh 部署"
+}
+
+# ---- 命令: remove / rm ----
+cmd_remove_skill() {
+    local name="${1:?请指定 Skill 名称}"
+    local category="${2:-zorron-skills/zorron-original}"
+    
+    # 去除首尾斜杠
+    category="${category#/}"
+    category="${category%/}"
+    
+    local skill_dir="${ZORRON_ROOT}/shared/skills/${category}/${name}"
+
+    if [[ ! -d "$skill_dir" ]]; then
+        # 尝试全局查找，以防分类写错
+        local found_dir
+        found_dir=$(find "${ZORRON_ROOT}/shared/skills" -type d -name "$name" -print -quit || true)
+        if [[ -n "$found_dir" ]]; then
+            skill_dir="$found_dir"
+            category=$(python3 -c "import os; print(os.path.relpath(os.path.dirname('$skill_dir'), '${ZORRON_ROOT}/shared/skills'))" 2>/dev/null || echo "$category")
+        else
+            log_error "Skill 不存在: ${category}/${name}"
+            exit 1
+        fi
+    fi
+
+    # 清理已安装工具中的对应 symlink
+    for tool_dir in "${ZORRON_ROOT}/tools"/*/; do
+        [[ -d "$tool_dir" ]] || continue
+        local tool_name
+        tool_name=$(basename "$tool_dir")
+        local conf_file="$tool_dir/target.conf"
+        
+        if [[ -f "$conf_file" ]]; then
+            parse_target_conf "$conf_file"
+            local global_target
+            global_target=$(resolve_path "$TARGET_GLOBAL_DIR")
+            local skill_target="$global_target/skills/$name"
+            
+            if [[ -L "$skill_target" ]]; then
+                log_info "正在清理 ${tool_name} 中的 Skill 软链接..."
+                rm -f "$skill_target"
+            fi
+        fi
+    done
+
+    # 删除 Skill 目录
+    rm -rf "$skill_dir"
+    log_ok "Skill 已成功删除: shared/skills/${category}/${name}/"
+}
+
+cmd_remove_mcp() {
+    local name="${1:?请指定 MCP 服务名称}"
+    local mcp_file="${ZORRON_ROOT}/shared/mcp-servers/${name}.json"
+
+    if [[ ! -f "$mcp_file" ]]; then
+        log_error "MCP 服务配置文件不存在: shared/mcp-servers/${name}.json"
+        exit 1
+    fi
+
+    rm -f "$mcp_file"
+    log_ok "MCP 服务配置已删除: shared/mcp-servers/${name}.json"
+    log_info "提示: 请运行 'zorron deploy' 重新部署并合并配置"
+}
+
+cmd_remove_tool() {
+    local name="${1:?请指定工具名称}"
+    local tool_dir="${ZORRON_ROOT}/tools/${name}"
+
+    if [[ ! -d "$tool_dir" ]]; then
+        log_error "工具配置目录不存在: tools/${name}"
+        exit 1
+    fi
+
+    rm -rf "$tool_dir"
+    log_ok "工具配置目录已删除: tools/${name}/"
+}
+
+# ---- 命令: edit ----
+cmd_edit_skill() {
+    local name="${1:?请指定 Skill 名称}"
+    local category="${2:-zorron-skills/zorron-original}"
+    
+    category="${category#/}"
+    category="${category%/}"
+    
+    local skill_file="${ZORRON_ROOT}/shared/skills/${category}/${name}/SKILL.md"
+
+    if [[ ! -f "$skill_file" ]]; then
+        local found_file
+        found_file=$(find "${ZORRON_ROOT}/shared/skills" -type f \( -name "SKILL.md" -o -name "skill.md" \) | grep -i "/${name}/" | head -n1 || true)
+        if [[ -n "$found_file" ]]; then
+            skill_file="$found_file"
+        else
+            log_error "Skill 文件不存在: ${category}/${name}/SKILL.md"
+            exit 1
+        fi
+    fi
+
+    local editor="${VISUAL:-${EDITOR:-nano}}"
+    log_info "正在使用 ${editor} 编辑 Skill: ${skill_file}"
+    "$editor" "$skill_file"
+}
+
+cmd_edit_mcp() {
+    local name="${1:?请指定 MCP 服务名称}"
+    local mcp_file="${ZORRON_ROOT}/shared/mcp-servers/${name}.json"
+
+    if [[ ! -f "$mcp_file" ]]; then
+        log_error "MCP 服务配置文件不存在: shared/mcp-servers/${name}.json"
+        exit 1
+    fi
+
+    local editor="${VISUAL:-${EDITOR:-nano}}"
+    log_info "正在使用 ${editor} 编辑 MCP 配置: ${mcp_file}"
+    "$editor" "$mcp_file"
+}
+
+cmd_edit_tool() {
+    local name="${1:?请指定工具名称}"
+    local tool_dir="${ZORRON_ROOT}/tools/${name}"
+
+    if [[ ! -d "$tool_dir" ]]; then
+        log_error "工具配置目录不存在: tools/${name}"
+        exit 1
+    fi
+
+    local conf_file="$tool_dir/target.conf"
+    if [[ ! -f "$conf_file" ]]; then
+        log_error "target.conf 不存在: tools/${name}/target.conf"
+        exit 1
+    fi
+
+    local editor="${VISUAL:-${EDITOR:-nano}}"
+    log_info "正在使用 ${editor} 编辑工具配置: ${conf_file}"
+    "$editor" "$conf_file"
 }
 
 # ---- 命令: init ----
@@ -500,6 +645,32 @@ main() {
                 *)
                     log_error "未知 add 子命令: $subcmd"
                     echo "可用: add skill|mcp|tool <名称>"
+                    exit 1
+                    ;;
+            esac
+            ;;
+        remove|rm)
+            local subcmd="${1:-}"
+            case "$subcmd" in
+                skill) shift; cmd_remove_skill "$@" ;;
+                mcp)   shift; cmd_remove_mcp "$@" ;;
+                tool)  shift; cmd_remove_tool "$@" ;;
+                *)
+                    log_error "未知 remove 子命令: $subcmd"
+                    echo "可用: remove skill|mcp|tool <名称>"
+                    exit 1
+                    ;;
+            esac
+            ;;
+        edit)
+            local subcmd="${1:-}"
+            case "$subcmd" in
+                skill) shift; cmd_edit_skill "$@" ;;
+                mcp)   shift; cmd_edit_mcp "$@" ;;
+                tool)  shift; cmd_edit_tool "$@" ;;
+                *)
+                    log_error "未知 edit 子命令: $subcmd"
+                    echo "可用: edit skill|mcp|tool <名称>"
                     exit 1
                     ;;
             esac

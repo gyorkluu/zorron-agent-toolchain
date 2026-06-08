@@ -106,6 +106,22 @@ python3 scripts/validate_skill.py <SKILL.md 文件路径> [--strict] [--json]
   - `--json`：以 JSON 格式输出扫描报告，便于 CI/CD 或 Agent 机器解析。
 - **动作详情**：静态分析 Skill 文件结构，验证 YAML 头部的 description 词数限制（推荐 40~100 字）、YAML 头部属性完整性、是否包含 `## When to invoke` 判定条件、是否包含 "DO NOT" 负向排除短语、文件字数是否过长、代码块是否缺失语言 tag 等。
 
+#### 📝 编辑已有 Skill
+```bash
+./scripts/zorron edit skill <Skill名称> [分类路径]
+```
+- **示例**：`./scripts/zorron edit skill pdf-reader`
+- **动作详情**：使用终端首选编辑器（系统优先使用环境变量 `$VISUAL` 或 `$EDITOR`，如 `vscode`、`vim` 或 `nano`）直接打开该 Skill 的 `SKILL.md` 文件进行快速修改。支持模糊匹配名称（无需写完整分类路径即可自动查找定位并打开）。
+
+#### 🗑️ 删除已有 Skill 及其部署链接
+```bash
+./scripts/zorron remove skill <Skill名称> [分类路径]
+# 或者简写：
+./scripts/zorron rm skill <Skill名称> [分类路径]
+```
+- **示例**：`./scripts/zorron rm skill pdf-reader`
+- **动作详情**：不仅会物理删除 `shared/skills/` 目录下的该 Skill 源码文件夹，还会**自动扫描**所有已部署的 Agent 工具目录（如 `~/.claude/skills/pdf-reader` 等），将其部署的符号链接（Symlink）一并彻底清理干净，实现无残留下线。
+
 ---
 
 ### 2. 🔗 MCP 服务集成模块 (MCP Servers)
@@ -123,6 +139,22 @@ python3 scripts/validate_skill.py <SKILL.md 文件路径> [--strict] [--json]
   1. 选择服务器类型：`stdio`（标准 IO 本地进程）或 `sse`（SSE 远程连接）。
   2. 输入执行命令（如 `bunx`、`node`）、运行参数以及是否需要注入环境变量。
   3. 配置自动写入到 `shared/mcp-servers/` 独立配置文件中，在 `install.sh` 时会自动与全局 `shared/mcp-servers.json` 及 `secrets.local.json` 进行深度合并渲染。
+
+#### 📝 编辑 MCP 服务配置
+```bash
+./scripts/zorron edit mcp <MCP名称>
+```
+- **示例**：`./scripts/zorron edit mcp filesystem`
+- **动作详情**：在系统终端编辑器中快速打开对应 MCP 服务的 JSON 配置文件（即 `shared/mcp-servers/<MCP名称>.json`）进行手动高级配置微调（如添加新的运行参数或修改环境变量）。
+
+#### 🗑️ 删除 MCP 服务
+```bash
+./scripts/zorron remove mcp <MCP名称>
+# 或者简写：
+./scripts/zorron rm mcp <MCP名称>
+```
+- **示例**：`./scripts/zorron rm mcp filesystem`
+- **动作详情**：物理删除 `shared/mcp-servers/<MCP名称>.json` 配置条目。在删除后，运行 `zorron deploy` 或 `./install.sh`，系统将重新合并全局 MCP 配置，自动将该服务从各个 Agent 工具（如 Claude Code 等）的配置文件中干净移除。
 
 ---
 
