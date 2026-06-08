@@ -79,19 +79,31 @@ Scaffold, build, and deploy frontend projects (e.g., React, Vue, Next.js static,
 - 🔄 Fallback: If `env pull` fails due to login expiration, run `edgeone login` (selecting `China` or `Global`) to refresh the authentication session and retry.
 
 ### Phase 4: Local Build & Manual Deployment
-1. Build the production build locally:
+1. Log in to your Tencent Cloud account (skip if already logged in or using a token):
+   ```bash
+   edgeone login
+   # Verify active account
+   edgeone whoami
+   ```
+2. Build the production build locally:
    ```bash
    npm run build
    ```
-2. Deploy the built static assets to EdgeOne Pages:
-   ```bash
-   # For production environment
-   edgeone pages deploy ./dist
-   # For preview/staging environment
-   edgeone pages deploy ./dist -e preview
-   ```
+3. Deploy the built static assets to EdgeOne Pages:
+   - **Interactive Login Mode** (recommended for local dev/development environment):
+     ```bash
+     edgeone pages deploy ./dist
+     ```
+   - **Token Mode** (recommended for automation or headless environments):
+     ```bash
+     edgeone pages deploy ./dist -t <api_token>
+     ```
+   - **Preview/Staging Mode**:
+     ```bash
+     edgeone pages deploy ./dist -e preview
+     ```
 - ✅ Success: CLI reports successful upload and returns a preview or production URL (e.g., `project-xxxxx.edgeone.app`).
-- 🔄 Fallback: If local deployment fails with a timeout or large bundle error, compress/zip the folder and try `edgeone pages deploy ./dist.zip`.
+- 🔄 Fallback: If local deployment fails with a login/session error, run `edgeone login` again to refresh credentials. If it fails with a timeout or large bundle error, compress/zip the folder and try `edgeone pages deploy ./dist.zip`.
 
 ### Phase 5: CI/CD Pipeline Integration
 1. Set up GitHub Actions for automatic deploy on push.
