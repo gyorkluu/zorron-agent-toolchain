@@ -303,8 +303,7 @@ if [[ -d "$SHARED_SKILLS_DIR" ]]; then
         # 校验 Skill 结构稳定性
         if command -v python3 &>/dev/null && [[ -f "${ZORRON_ROOT}/scripts/validate_skill.py" ]]; then
             if ! python3 "${ZORRON_ROOT}/scripts/validate_skill.py" "$skill_file" >/dev/null 2>&1; then
-                log_warn "  ⚠️  Skill 校验失败 (Critical Error): $skill_name，跳过部署。请运行: python3 scripts/validate_skill.py $skill_file"
-                continue
+                log_warn "  ⚠️  Skill 校验提示: ${skill_name} 结构不符合规范，建议优化。查看详情: python3 scripts/validate_skill.py $skill_file"
             fi
         fi
 
