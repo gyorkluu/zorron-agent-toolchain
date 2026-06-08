@@ -300,20 +300,28 @@ Zorron Agent Toolchain 鼓励开发者 Fork 并定制专属于您（或您团队
 - **多设备配置同步**：在您的多台开发设备上（如公司电脑、个人 Mac、云服务器），直接 Clone 您的 **Fork 仓库**，这样任何一处配置更改，通过 `git commit & push` 之后，在其他设备运行 `git pull && ./install.sh` 即可瞬间同步环境。
 
 ### 2. 🔄 如何同步上游（主仓库）的最新修改？
-当主仓库更新后，您可以通过以下两种方式将最新的变更合并同步到您自己的 Fork 分支中：
 
-#### 💡 方式一：通过 GitHub Web 页面一键同步 (推荐，最简单)
-如果您使用 GitHub 托管您的 Fork 仓库，甚至不需要在本地配置额外的 remote：
+当主仓库更新后，由于本项目由 **主工具链仓库** 和 **共享技能子模块 (`zorron-skills`)** 两部分组成，同步时需要根据您的定制方式分别处理。
+
+---
+
+#### 📦 第一部分：同步主工具链仓库 (`zorron-agent-toolchain`)
+
+##### 💡 方式一：通过 GitHub Web 页面一键同步 (最简单)
+如果您使用 GitHub 托管您的 Fork 仓库：
 1. 打开您的 GitHub Fork 仓库页面（例如：`https://github.com/您的用户名/zorron-agent-toolchain`）。
 2. 在代码区域上方，找到 **"Sync fork"** 下拉菜单按钮。
 3. 点击 **"Sync fork"**，然后点击 **"Update branch"**。GitHub 会在云端自动将主仓库的最新提交合并进您的分支。
-4. 回到您的本地开发机，只需在工具链目录运行拉取即可同步到本地：
+4. 回到您的本地开发机，拉取代码并更新子模块：
    ```bash
-   git pull && git submodule update --init --recursive && ./install.sh
+   cd ~/zorron-agent-toolchain
+   git pull
+   git submodule update --init --recursive
+   ./install.sh
    ```
 
-#### 💻 方式二：通过 Git 命令行同步 (适合本地/终端开发)
-如果是在纯终端环境，或者希望手动处理合并：
+##### 💻 方式二：通过 Git 命令行同步 (纯终端开发)
+如果是在纯终端环境，或希望手动处理合并：
 ```bash
 # 1. 进入本地工具链目录
 cd ~/zorron-agent-toolchain
@@ -321,16 +329,62 @@ cd ~/zorron-agent-toolchain
 # 2. 将作者的源仓库添加为 "upstream" 远程源 (只需配置一次)
 git remote add upstream https://github.com/gyorkluu/zorron-agent-toolchain.git
 
-# 3. 获取上游主仓库的最新修改
+# 3. 获取上游主仓库的最新修改并合并
 git fetch upstream
-
-# 4. 确保您在本地 main 分支上，并执行合并
 git checkout main
 git merge upstream/main
+
+# 4. 更新子模块到上游指定的 Commit
+git submodule update --init --recursive
 
 # 5. 推送合并后的最新状态到您自己的个人 Fork 远程库
 git push origin main
 ```
+
+---
+
+#### 📚 第二部分：同步共享技能子模块 (`zorron-skills`)
+
+同步子模块（`shared/skills/zorron-skills`）取决于您**是否 Fork 了技能仓库**：
+
+##### 场景 A：您直接使用上游技能库（没有 Fork `zorron-skills`）
+如果您的 `.gitmodules` 指向的是原作者的 `zorron-skills` 库，而您只想获取最新的 Skills：
+* **方式 1**：如果主工具链仓库已经更新了子模块指针，您在主仓库下运行 `git submodule update --init --recursive` 即可。
+* **方式 2**：如果想在主仓库更新前，强行拉取 `zorron-skills` 远程仓库的最新内容，请在工具链根目录下运行：
+  ```bash
+  git submodule update --remote --merge
+  ```
+  该命令会自动拉取最新的技能并合并到本地目录。
+
+##### 场景 B：您也 Fork 了技能库，并希望同步上游技能更新
+如果您将 `zorron-skills` 子模块也 Fork 到了您自己的账号下（例如 `https://github.com/您的用户名/zorron-skills.git`）：
+1. **先在 GitHub Web 页面上同步您的技能库 Fork**：
+   - 打开您的 `zorron-skills` Fork 仓库页面。
+   - 点击 **"Sync fork"** -> **"Update branch"**.
+2. **在本地拉取更新并提交到您的工具链仓库**：
+   ```bash
+   # 进入子模块目录
+   cd ~/zorron-agent-toolchain/shared/skills/zorron-skills
+   
+   # 拉取您 Fork 仓库的最新代码
+   git pull origin main
+   
+   # 返回工具链根目录
+   cd ~/zorron-agent-toolchain
+   
+   # 将工具链对子模块的指针更新，并推送到您的工具链 Fork 中
+   git add shared/skills/zorron-skills
+   git commit -m "chore: sync skills submodule to latest fork commit"
+   git push origin main
+   ```
+3. **或者，直接在本地子模块中添加上游源进行合并**：
+   ```bash
+   cd ~/zorron-agent-toolchain/shared/skills/zorron-skills
+   git remote add upstream https://github.com/gyorkluu/zorron-skills.git   # (只需配置一次)
+   git fetch upstream
+   git merge upstream/main
+   git push origin main
+   ```
 
 ### 3. 🛡️ 最佳实践：如何避免与上游发生合并冲突 (Conflict)？
 为了在后续同步上游更新时享受 "零冲突" 的平滑体验，建议您遵循以下**解耦设计规则**进行个人定制：
