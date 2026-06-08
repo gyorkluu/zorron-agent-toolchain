@@ -13,6 +13,8 @@ FORCE=false
 DRY_RUN=false
 VERBOSE=false
 CUSTOM_HOST=""
+SELECTIVE_TOOLS=""
+INSTALL_ALL=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -20,6 +22,8 @@ while [[ $# -gt 0 ]]; do
         --dry-run|-n) DRY_RUN=true; shift ;;
         --verbose|-v) VERBOSE=true; shift ;;
         --host|-H)    CUSTOM_HOST="$2"; shift 2 ;;
+        --tools|-t)   SELECTIVE_TOOLS="$2"; shift 2 ;;
+        --all|-a)     INSTALL_ALL=true; shift ;;
         --help|-h)
             echo "用法: ./install.sh [选项]"
             echo ""
@@ -28,6 +32,8 @@ while [[ $# -gt 0 ]]; do
             echo "  --dry-run, -n   模拟运行，不实际修改文件"
             echo "  --verbose, -v   显示详细输出"
             echo "  --host, -H      指定主机名（默认自动检测）"
+            echo "  --tools, -t     指定仅部署的工具列表，逗号分隔 (例: --tools claude-code,opencode)"
+            echo "  --all, -a       强制部署所有工具，跳过 CLI 已安装检测"
             echo "  --help, -h      显示帮助"
             exit 0
             ;;
@@ -106,18 +112,30 @@ for tool_dir in "$TOOLS_DIR"/*/; do
 
     parse_target_conf "$conf_file"
 
-    # 检测工具是否安装
-    if [[ -n "$TARGET_CLI_CMD" ]]; then
-        if detect_tool "$TARGET_CLI_CMD"; then
+    # 检测工具选择与安装情况
+    if $INSTALL_ALL; then
+        INSTALLED_TOOLS+=("$tool_name")
+        log_ok "强制部署工具 (All Mode): $tool_name"
+    elif [[ -n "$SELECTIVE_TOOLS" ]]; then
+        # 检查工具是否在指定列表中 (支持逗号分隔)
+        if [[ ",$SELECTIVE_TOOLS," == *",$tool_name,"* ]]; then
             INSTALLED_TOOLS+=("$tool_name")
-            log_ok "检测到工具: $tool_name (${TARGET_CLI_CMD})"
-        else
-            $VERBOSE && log_info "未安装: $tool_name (${TARGET_CLI_CMD})"
+            log_ok "选择部署工具: $tool_name"
         fi
     else
-        # 没有 CLI 命令，默认部署
-        INSTALLED_TOOLS+=("$tool_name")
-        log_ok "检测到工具: $tool_name（无条件部署）"
+        # 默认：自动探测本地 CLI 状态
+        if [[ -n "$TARGET_CLI_CMD" ]]; then
+            if detect_tool "$TARGET_CLI_CMD"; then
+                INSTALLED_TOOLS+=("$tool_name")
+                log_ok "检测到本地已安装: $tool_name (${TARGET_CLI_CMD})"
+            else
+                $VERBOSE && log_info "未检测到本地安装: $tool_name (${TARGET_CLI_CMD})"
+            fi
+        else
+            # 没有检测命令的工具默认部署
+            INSTALLED_TOOLS+=("$tool_name")
+            log_ok "检测到工具 (无检测条件): $tool_name"
+        fi
     fi
 done
 
