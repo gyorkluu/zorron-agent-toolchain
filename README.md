@@ -35,105 +35,147 @@ cd ~/zorron-agent-toolchain
 chmod +x install.sh scripts/zorron
 ```
 
-### 2. 初始化本地配置
+### 2. 初始化本地配置（交互式密钥向导）
+
+在终端中执行以下初始化指令：
 
 ```bash
 ./scripts/zorron init
 ```
 
-这会创建：
-- `~/.zorron/secrets.local.json` — 密钥配置文件（不入 Git）
-- `hosts/<你的主机名>/override/` — 主机级覆盖目录
-- `.env.local.example` — 环境变量模板
+**执行详情**：
+1. **自动建目录**：自动创建 Zorron 主配置目录 `~/.zorron`。
+2. **主机标识映射**：在 `hosts/` 目录下生成匹配当前机器 hostname 的独立主机级覆盖目录 `hosts/$(hostname -s)/override/`。
+3. **🔑 敏感密钥配置向导**：控制台将安全地提示您输入第三方 API Key（例如 `ANTHROPIC_API_KEY`、`OPENAI_API_KEY`）。此阶段通过 `read -s` 隐藏您的终端键入内容防止窥屏，并自动将其生成写入为：
+   - `~/.zorron/secrets.local.json` — 本地 MCP 敏感信息配置（不入 Git）
+   - `.env.local` — 本地 shell 环境变量（不入 Git）
+4. **生成模板**：生成 `.env.local.example` 环境变量模板和 `secrets.local.json.example` JSON 模板。
 
-### 3. 编辑密钥文件
+### 3. 部署配置 (幂等安装)
 
-```bash
-# 编辑密钥文件，填入你的 API 密钥等敏感信息
-vim ~/.zorron/secrets.local.json
-```
-
-### 4. 部署配置
+运行工具链核心部署脚本：
 
 ```bash
-./install.sh
+./install.sh [选项]
 ```
 
-脚本会自动检测已安装的工具并部署对应配置：
+**命令行可用选项**：
+- `--force` 或 `-f`：强制重新部署，不经过交互询问直接覆盖已有配置或冲突的软链接。
+- `--dry-run` 或 `-n`：模拟运行（干跑），显示即将执行的操作但不修改任何文件。
+- `--verbose` 或 `-v`：详细输出模式，展示扫描路径、版本匹配等底层调试日志。
+- `--host <主机名>` 或 `-H <主机名>`：强行指定当前部署的主机名（用于跨机器模拟调试主机覆盖配置）。
 
-```
-  __ _  ___ _ __ ___  _ __ __ _
- / _` |/ _ \ '_ ` _ \| '__/ _` |
-| (_| |  __/ | | | | | | | (_| |
- \__, |\___|_| |_| |_|_|  \__,_|
- |___/
+**部署步骤逻辑**：
+- **第一步 (环境自愈)**：检查共享技能子模块 `shared/skills/zorron-skills` 是否拉取。若为空，自动拉取最新的技能内容。
+- **第二步 (工具扫描)**：智能扫描已安装的工具（如 `opencode`、`claude-code`）。
+- **第三步 (配置部署)**：部署对应工具配置并应用主机覆盖配置，对 `.json`、`.yaml`、`.md`、`.conf` 等配置文件中的 `{{HOME}}`、`{{HOSTNAME}}` 等环境变量占位符进行自动渲染。
+- **第四步 (MCP 合并)**：合并全局 `shared/mcp-servers.json` 与独立文件，生成对应的 MCP 配置（缺少 `jq` 时自动降级）。
+- **第五步 (校验与部署 Skill)**：对 Skill 进行静态语法结构校验，并在 `~/.config/<工具名>/skills/` 下建立对应的符号链接。
+- **第六步 (规则与备份清理)**：建立全局编程规范软链接，清理超过 30 天的旧备份。
 
-  Agent Toolchain — 你的 AI 编程环境基础设施
+---
 
-ℹ  前置检查...
-ℹ  🔍 扫描已安装的 Agent 工具...
-✔  检测到工具: claude-code (claude)
-ℹ  共检测到 1 个工具: claude-code
+## 💻 功能模块与使用指南
 
-ℹ  📦 开始部署配置...
-   ➜ 部署 claude-code 配置...
-   ✔ 符号链接: ~/.claude/settings.json → ...
-   ✔ 符号链接: ~/.claude/CLAUDE.md → ...
+### 1. 📚 共享技能模块 (Shared Skills)
 
-ℹ  🔗 合并全局 MCP 服务...
-ℹ  📚 部署共享 Skills...
-ℹ  📜 部署全局规则...
+该模块负责管理、分发、列表以及校验所有 Agent Skills 资产。
 
-✔  ✅ Zorron Agent Toolchain 已就绪！
-```
-
-## 日常使用
-
-### 同步配置
-
-在任意机器上修改后：
-
+#### 📥 添加新 Skill 模板
 ```bash
-cd ~/zorron-agent-toolchain
-git add -A && git commit -m "update claude settings" && git push
+./scripts/zorron add skill <Skill名称> [分类路径]
 ```
+- **示例**：`./scripts/zorron add skill test-helper zorron-skills/frontend`
+- **参数说明**：
+  - `<Skill名称>`（必需）：Skill 的 kebab-case 英文标识（如 `react-helper`）。
+  - `[分类路径]`（可选）：子模块相对目录路径。默认为 `zorron-skills/zorron-original`。
+- **动作详情**：在 `shared/skills/[分类路径]/<Skill名称>/` 目录下生成最符合规范的 `SKILL.md` 骨架模板，该模板带有标准的 YAML 头部信息和 "When to invoke"、“Rules & Guardrails” 等字段。
 
-在其他机器上更新：
-
+#### 📋 列出已配置的 Skill
 ```bash
-cd ~/zorron-agent-toolchain && git pull && ./install.sh
-```
-
-### 管理助手
-
-```bash
-# 查看所有配置
 ./scripts/zorron list
-
-# 添加新 Skill
-./scripts/zorron add skill my-skill
-
-# 添加新 MCP 服务
-./scripts/zorron add mcp my-server
-
-# 添加新工具
-./scripts/zorron add tool new-agent
-
-# 查看部署状态
-./scripts/zorron status
-
-# 管理备份
-./scripts/zorron backup list
-./scripts/zorron backup restore ~/.claude
 ```
+- **动作详情**：递归检索 `shared/skills` 下所有包含 `SKILL.md`/`skill.md` 的文件夹，提取其 YAML 头部的 `description` 值（支持 YAML block scalar `description: |` 读取），并以 `[分类名]/[Skill名称] - [描述]` 格式带有绿色高亮终端彩色输出。
 
-### ⌨️ 命令行自动补全 (Zsh)
+#### 🛡️ 静态结构校验 Skill 规范
+```bash
+python3 scripts/validate_skill.py <SKILL.md 文件路径> [--strict] [--json]
+```
+- **参数说明**：
+  - `--strict`：严格模式，任何 Warning 警告均会被当做 Error 处理，使退出码变为 1。
+  - `--json`：以 JSON 格式输出扫描报告，便于 CI/CD 或 Agent 机器解析。
+- **动作详情**：静态分析 Skill 文件结构，验证 YAML 头部的 description 词数限制（推荐 40~100 字）、YAML 头部属性完整性、是否包含 `## When to invoke` 判定条件、是否包含 "DO NOT" 负向排除短语、文件字数是否过长、代码块是否缺失语言 tag 等。
 
-为了在使用 `zorron` 助手时获得子命令和参数的智能补全，可以直接在您的 `~/.zshrc` 中 source 补全脚本：
+---
+
+### 2. 🔗 MCP 服务集成模块 (MCP Servers)
+
+该模块管理和部署 Model Context Protocol 服务。
+
+#### 📥 声明新的 MCP 服务
+```bash
+./scripts/zorron add mcp <MCP名称>
+```
+- **示例**：`./scripts/zorron add mcp filesystem`
+- **参数说明**：
+  - `<MCP名称>`（必需）：新 MCP 服务器的唯一键值。
+- **动作详情**：开启命令行交互：
+  1. 选择服务器类型：`stdio`（标准 IO 本地进程）或 `sse`（SSE 远程连接）。
+  2. 输入执行命令（如 `bunx`、`node`）、运行参数以及是否需要注入环境变量。
+  3. 配置自动写入到 `shared/mcp-servers/` 独立配置文件中，在 `install.sh` 时会自动与全局 `shared/mcp-servers.json` 及 `secrets.local.json` 进行深度合并渲染。
+
+---
+
+### 3. 💾 系统备份与灾备恢复模块 (Backup & Restore)
+
+在任何文件被写入覆盖之前，Zorron 会自动进行本地备份。
+
+#### 📋 查看当前备份清单
+```bash
+./scripts/zorron backup list [前缀路径]
+```
+- **示例**：`./scripts/zorron backup list`
+- **参数说明**：
+  - `[前缀路径]`（可选）：限制只列出该目录下的备份文件。默认为 `$HOME`（用户主目录）。
+- **动作详情**：递归扫描并以列表形式打印出当前主机上所有的备份记录（带时间戳 `.backup.YYYYMMDD_HHMMSS` 或符号链接信息 `.symlink`），并展示备份文件/目录的大小。
+
+#### ⏪ 从备份恢复配置
+```bash
+./scripts/zorron backup restore <原始配置路径> [备份时间戳]
+```
+- **示例 1（恢复到最近一次备份）**：`./scripts/zorron backup restore ~/.claude/settings.json`
+- **示例 2（指定恢复版本）**：`./scripts/zorron backup restore ~/.claude/settings.json 20260608_102917`
+- **参数说明**：
+  - `<原始配置路径>`（必需）：您想要复原的配置文件/目录路径。
+  - `[备份时间戳]`（可选）：格式为 `YYYYMMDD_HHMMSS`。若省略，则自动还原最新生成的一个备份。
+- **动作详情**：自动替换损坏的配置为备份版本，并恢复符号链接指针。
+
+---
+
+### 4. 📜 编程规范与规则模块 (Global Rules)
+
+管理 Agent 的全局系统指令。
+
+#### 📝 添加全局编码规则
+- **动作**：直接在 `shared/rules/` 目录下新增 `.md` 格式的规则规范文档（例如 `typescript-esm.md`）。
+- **执行效果**：无需修改任何配置，在下次执行 `./install.sh` 时，系统会自动将这些规则作为符号链接部署到对应 Agent 的规则目录下（如 Claude Code 的 `~/.claude/CLAUDE.d/rules/`）。
+
+---
+
+### ⌨️ Zsh 命令行自动补全 (Autocomplete)
+
+为了在使用 `zorron` 命令时获得快速输入体验（例如对 `backup restore` 的路径补全，或者 `add skill` 的分类补全）：
+
+在您的 `~/.zshrc` 中添加以下代码来启用补全：
 
 ```bash
+# 激活 Zorron 自动补全
 source ~/Documents/workspace/zorron-agent-toolchain/scripts/completion.zsh
 ```
+
+重新加载终端即可生效：`source ~/.zshrc`。
+
+---
 
 ## 目录结构
 
