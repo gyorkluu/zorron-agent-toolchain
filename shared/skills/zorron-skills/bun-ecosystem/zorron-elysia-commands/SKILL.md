@@ -18,7 +18,7 @@ version: 1.0.0
 Treat `zorron-nest/` as the package root. Run package commands from:
 
 ```bash
-cd /Users/gyork/Documents/zorronAgents/zorron-agents/zorron-nest
+cd ~/Documents/zorronAgents/zorron-agents/zorron-nest
 ```
 
 The outer `zorron-agents/` directory is the workspace container. The useful app files live under `zorron-nest/apps`, `zorron-nest/libs`, `zorron-nest/scripts`, and `zorron-nest/docs`.

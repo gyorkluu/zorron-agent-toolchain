@@ -55,7 +55,7 @@
   "projectPorts": [
     {
       "project": "zorron-nest",
-      "location": "/Users/gyork/Documents/zorronAgents/zorron-agents/zorron-nest",
+      "location": "~/Documents/zorronAgents/zorron-agents/zorron-nest",
       "ports": [
         { "port": 3000, "service": "API Gateway", "protocol": "HTTP" },
         { "port": 3001, "service": "Dispatcher", "protocol": "HTTP" },
