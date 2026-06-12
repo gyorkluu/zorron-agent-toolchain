@@ -43,3 +43,7 @@ Desktop.ini
 # ---- Node.js (如果本地有开发依赖) ----
 node_modules/
 package-lock.json
+
+# ---- 私密 Skills 目录 ----
+shared/skills/private/
+

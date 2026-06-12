@@ -1,4 +1,0 @@
-interface:
-  display_name: "Zorron Nest Commands"
-  short_description: "Zorron Nest project command guide"
-  default_prompt: "Use $zorron-nest-commands to run or explain common Zorron Nest development commands."
