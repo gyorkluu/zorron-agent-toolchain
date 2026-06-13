@@ -47,3 +47,8 @@ package-lock.json
 # ---- 私密 Skills 目录 ----
 shared/skills/private/
 
+# ---- 本地开发文档与脚本 ----
+AGENT_GIT_GUIDE.md
+scripts/push-tool.sh
+
+
