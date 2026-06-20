@@ -1,8 +1,11 @@
 ---
 name: xhs
-description: "| DO NOT invoke for other unrelated tasks. This skill covers detailed instructions, workflows, prerequisites, and safety guidelines for the task. This skill covers detailed instructions, workflows, prerequisites, and safety guidelines for the task. This skill covers detailed instructions, workflows, prerequisites, and safety guidelines for the task."
-allowed-tools: Bash
-version: 1.0.0
+description: |
+  编写或润色小红书（Xiaohongshu/XHS）引流与干货笔记。
+  要求：纯文本输出（无 Markdown 粗体、斜体、列表点或代码块），直接适配复制粘贴；
+  应用人性化中文，去除 AI 写作痕迹；遵循科学养号与合规防封导流策略。
+metadata:
+  trigger: 编写小红书笔记，小红书文案，小红书引流，小红书润色
 ---
 
 # 小红书（XHS）文案编写与引流规范
@@ -10,12 +13,6 @@ version: 1.0.0
 本指南旨在规范 AI 智能体在编写、润色和优化小红书（下文简称 XHS）笔记时的行为，确保文案天然适配小红书发布规范，并最大化防封避坑与导流效果。
 
 ---
-
-
-## When to invoke
-- When the task requires: | DO NOT invoke for other unrelated tasks.
-- When executing workflows related to xhs.
-- **DO NOT invoke when**: The request is unrelated to xhs.
 
 ## 一、 文本输出规范：绝对禁止 Markdown 格式
 

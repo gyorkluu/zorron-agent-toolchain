@@ -1,17 +1,9 @@
 ---
 name: chrome-devtools-cli
-description: "Use this skill to write shell scripts or run shell commands to automate tasks in the browser or otherwise use Chrome DevTools via CLI. DO NOT invoke for other unrelated tasks. This skill covers detailed instructions, workflows, prerequisites, and safety guidelines for the task."
-allowed-tools: Bash
-version: 1.0.0
+description: Use this skill to write shell scripts or run shell commands to automate tasks in the browser or otherwise use Chrome DevTools via CLI.
 ---
 
 The `chrome-devtools-mcp` CLI lets you interact with the browser from your terminal.
-
-
-## When to invoke
-- When the task requires: Use this skill to write shell scripts or run shell commands to automate tasks in the browser or otherwise use Chrome DevTools via CLI.
-- When executing workflows related to chrome-devtools-cli.
-- **DO NOT invoke when**: The request is unrelated to chrome-devtools-cli.
 
 ## Setup
 
@@ -25,7 +17,7 @@ _Note: If this is your very first time using the CLI, see [references/installati
 
 Snapshot example:
 
-```text
+```
 uid=1_0 RootWebArea "Example Domain" url="https://example.com/"
   uid=1_1 heading "Example Domain" level="1"
 ```

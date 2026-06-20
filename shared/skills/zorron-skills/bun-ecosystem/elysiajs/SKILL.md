@@ -1,8 +1,6 @@
 ---
 name: elysiajs
-description: "Create backend with ElysiaJS, a type-safe, high-performance framework. DO NOT invoke for other unrelated tasks. This skill covers detailed instructions, workflows, prerequisites, and safety guidelines for the task. This skill covers detailed instructions, workflows, prerequisites, and safety guidelines for the task."
-allowed-tools: Bash
-version: 1.0.0
+description: Create backend with ElysiaJS, a type-safe, high-performance framework.
 ---
 
 # ElysiaJS Development Skill
@@ -13,7 +11,7 @@ Always consult [elysiajs.com/llms.txt](https://elysiajs.com/llms.txt) for code e
 
 ElysiaJS is a TypeScript framework for building Bun-first (but not limited to Bun) type-safe, high-performance backend servers. This skill provides comprehensive guidance for developing with Elysia, including routing, validation, authentication, plugins, integrations, and deployment.
 
-## When to invoke
+## When to Use This Skill
 
 Trigger this skill when the user asks to:
 - Create or modify ElysiaJS routes, handlers, or servers
@@ -24,7 +22,6 @@ Trigger this skill when the user asks to:
 - Setup WebSocket endpoints for real-time features
 - Create unit tests for Elysia instances
 - Deploy Elysia servers to production
-- **DO NOT invoke when**: The requested task is outside this scope.
 
 ## Quick Start
 Quick scaffold:
@@ -232,7 +229,7 @@ import { z } from 'zod'
 ### Project Structure (Recommended)
 Elysia takes an unopinionated approach but based on user request. But without any specific preference, we recommend a feature-based and domain driven folder structure where each feature has its own folder containing controllers, services, and models.
 
-```text
+```
 src/
 ├── index.ts              # Main server entry
 ├── modules/

@@ -1,19 +1,15 @@
 ---
-name: react-best-practices
-description: "React and Next.js performance optimization guidelines from Vercel Engineering. This skill should be used when writing, reviewing, or refactoring React/Next.js code to ensure optimal performance patterns. Triggers on tasks involving React components, Next.js pages, data fetching, bundle optimization, or performance improvements. DO NOT invoke for other unrelated tasks."
-allowed-tools: Read
-version: 1.0.0
+name: vercel-react-best-practices
+description: React and Next.js performance optimization guidelines from Vercel Engineering. This skill should be used when writing, reviewing, or refactoring React/Next.js code to ensure optimal performance patterns. Triggers on tasks involving React components, Next.js pages, data fetching, bundle optimization, or performance improvements.
+license: MIT
+metadata:
+  author: vercel
+  version: "1.0.0"
 ---
 
 # Vercel React Best Practices
 
 Comprehensive performance optimization guide for React and Next.js applications, maintained by Vercel. Contains 70 rules across 8 categories, prioritized by impact to guide automated refactoring and code generation.
-
-
-## When to invoke
-- When the task requires: React and Next.
-- When executing workflows related to react-best-practices.
-- **DO NOT invoke when**: The request is unrelated to react-best-practices.
 
 ## When to Apply
 
@@ -137,7 +133,7 @@ Reference these guidelines when:
 
 Read individual rule files for detailed explanations and code examples:
 
-```text
+```
 rules/async-parallel.md
 rules/bundle-barrel-imports.md
 ```

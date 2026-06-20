@@ -1,8 +1,6 @@
 ---
 name: frontend-skill
-description: "Use when the task asks for a visually strong landing page, website, app, prototype, demo, or game UI. This skill enforces restrained composition, image-led hierarchy, cohesive content structure, and tasteful motion while avoiding generic cards, weak branding, and UI clutter. DO NOT invoke for other unrelated tasks."
-allowed-tools: Write
-version: 1.0.0
+description: Use when the task asks for a visually strong landing page, website, app, prototype, demo, or game UI. This skill enforces restrained composition, image-led hierarchy, cohesive content structure, and tasteful motion while avoiding generic cards, weak branding, and UI clutter.
 ---
 
 # Frontend Skill
@@ -10,12 +8,6 @@ version: 1.0.0
 Use this skill when the quality of the work depends on art direction, hierarchy, restraint, imagery, and motion rather than component count.
 
 Goal: ship interfaces that feel deliberate, premium, and current. Default toward award-level composition: one big idea, strong imagery, sparse copy, rigorous spacing, and a small number of memorable motions.
-
-
-## When to invoke
-- When the task requires: Use when the task asks for a visually strong landing page, website, app, prototype, demo, or game UI.
-- When executing workflows related to frontend-skill.
-- **DO NOT invoke when**: The request is unrelated to frontend-skill.
 
 ## Working Model
 

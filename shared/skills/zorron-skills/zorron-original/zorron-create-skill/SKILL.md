@@ -52,8 +52,9 @@ Following the principles of **Context Engineering**:
    ```
 2. Place API specifications, checklists, and documentation under `references/`.
 3. Reference these files using markdown links inside `SKILL.md` (e.g., `[pages_spec](references/pages_spec.md)`).
+4. If the skill involves external dependencies (CLI tools, packages, or static binaries), you **MUST** save a detailed dependency document (detailing GitHub links, package names, verification commands, and configuration) in `references/` (e.g. `references/dependencies.md`) and link it.
 
-- ✅ Success: Helpers and references are created and successfully linked.
+- ✅ Success: Helpers, references, and dependency documentations are created and successfully linked.
 - 🔄 Fallback: Document manual commands directly in the `SKILL.md` body if scripts are unnecessary.
 
 ### Phase 4: Deploy and Verify
@@ -75,6 +76,7 @@ Following the principles of **Context Engineering**:
 ## ⚠️ Rules & Guardrails
 - **MUST**: Always wrap the frontmatter `description` value in double quotes (`"..."`) to avoid YAML parsing failures on colons or quotes.
 - **MUST**: Ensure the skill `name` in frontmatter matches the directory name exactly.
+- **MUST**: If the skill relies on external dependencies (such as npm/python packages, CLI utilities, or precompiled binaries), always create a dedicated reference file (e.g., `references/dependencies.md`) containing official repositories, version requirements, and command references.
 - **MUST NOT**: Put long tables or bulky API documentations directly in `SKILL.md`; instead, push them to `references/` for clean context engineering.
 - **SHOULD**: Extract repetitive commands to `scripts/` instead of listing them step-by-step in the instructions.
 

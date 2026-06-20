@@ -1,17 +1,9 @@
 ---
 name: bun
-description: "Skill for using the Bun JavaScript runtime and package manager. Use when you need to install dependencies, run scripts, or execute JavaScript/TypeScript with Bun. DO NOT invoke for other unrelated tasks. This skill covers detailed instructions, workflows, prerequisites, and safety guidelines for the task."
-allowed-tools: Bash
-version: 1.0.0
+description: Skill for using the Bun JavaScript runtime and package manager. Use when you need to install dependencies, run scripts, or execute JavaScript/TypeScript with Bun.
 ---
 
 # Bun Skill
-
-
-## When to invoke
-- When the task requires: Skill for using the Bun JavaScript runtime and package manager.
-- When executing workflows related to bun.
-- **DO NOT invoke when**: The request is unrelated to bun.
 
 ## What is Bun?
 Bun is a fast all-in-one JavaScript runtime and package manager. It can replace Node.js, npm, yarn, or pnpm for many tasks.

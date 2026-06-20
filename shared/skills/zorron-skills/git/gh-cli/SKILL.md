@@ -1,8 +1,6 @@
 ---
 name: gh-cli
-description: "GitHub CLI (gh) comprehensive reference for repositories, issues, pull requests, Actions, projects, releases, gists, codespaces, organizations, extensions, and all GitHub operations from the command line. DO NOT invoke for other unrelated tasks. This skill covers detailed instructions, workflows, prerequisites, and safety guidelines for the task."
-allowed-tools: Edit
-version: 1.0.0
+description: GitHub CLI (gh) comprehensive reference for repositories, issues, pull requests, Actions, projects, releases, gists, codespaces, organizations, extensions, and all GitHub operations from the command line.
 ---
 
 # GitHub CLI (gh)
@@ -10,12 +8,6 @@ version: 1.0.0
 Comprehensive reference for GitHub CLI (gh) - work seamlessly with GitHub from the command line.
 
 **Version:** 2.85.0 (current as of January 2026)
-
-
-## When to invoke
-- When the task requires: GitHub CLI (gh) comprehensive reference for repositories, issues, pull requests, Actions, projects, releases, gists, codespaces, organizations, extensions, and all GitHub operations from the command line.
-- When executing workflows related to gh-cli.
-- **DO NOT invoke when**: The request is unrelated to gh-cli.
 
 ## Prerequisites
 
@@ -75,7 +67,7 @@ gh auth refresh --scopes write:org,read:public_key
 
 ## CLI Structure
 
-```text
+```
 gh                          # Root command
 ├── auth                    # Authentication
 │   ├── login

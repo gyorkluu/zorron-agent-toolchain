@@ -1,15 +1,13 @@
 ---
 name: publish-astro-edgeone
-description: "A guide on writing markdown articles and deploying Astro static sites to Tencent Cloud EdgeOne Pages via the EdgeOne CLI. DO NOT invoke for other unrelated tasks. This skill covers detailed instructions, workflows, prerequisites, and safety guidelines for the task."
-allowed-tools: Write
-version: 1.0.0
+description: "A guide on writing markdown articles and deploying Astro static sites to Tencent Cloud EdgeOne Pages via the EdgeOne CLI."
 ---
 
 # Publish Astro EdgeOne
 
 Write new markdown articles or notes, build the Astro static project, and deploy the build outputs to Tencent Cloud EdgeOne Pages using the EdgeOne CLI.
 
-## When to invoke
+## When to use this skill
 - When you want to publish a new article, note, or project on the blog.
 - When you need to build and deploy the website to Tencent Cloud EdgeOne Pages using the command line.
 - **DO NOT invoke when**: You are deploying to other platforms (like Vercel, Netlify, or standard VPS servers via SSH).
@@ -84,8 +82,8 @@ Write new markdown articles or notes, build the Astro static project, and deploy
      - Micro-Thoughts / Notes: `http://localhost:3004/notes`
    - Verify that formatting looks correct, syntax highlighting works, and the correct category badges apply.
 
-- ✅ Success: The new content is written, passes schema validation, and displays correctly locally.
-- 🔄 Fallback: If frontmatter validation fails, Astro dev server will throw errors in the console. Correct the invalid fields according to the Zod schema in `src/content/config.ts`.
+- ✅ **Success**: The new content is written, passes schema validation, and displays correctly locally.
+- 🔄 **Fallback**: If frontmatter validation fails, Astro dev server will throw errors in the console. Correct the invalid fields according to the Zod schema in `src/content/config.ts`.
 
 ### Phase 2: Build & Compile
 1. Run the production build command from the project root:
@@ -93,8 +91,8 @@ Write new markdown articles or notes, build the Astro static project, and deploy
    bun run build
    ```
 2. Verify that the static build succeeds and outputs files to the `dist/` directory.
-- ✅ Success: Build completed with zero compilation errors, and `dist/index.html` exists.
-- 🔄 Fallback: If the build fails, trace compile/type errors (e.g. invalid frontmatter dates or typescript interfaces) and fix them before proceeding.
+- ✅ **Success**: Build completed with zero compilation errors, and `dist/index.html` exists.
+- 🔄 **Fallback**: If the build fails, trace compile/type errors (e.g. invalid frontmatter dates or typescript interfaces) and fix them before proceeding.
 
 ### Phase 3: Deploy via EdgeOne CLI
 1. **Install EdgeOne CLI** globally (if not already installed):
@@ -116,8 +114,8 @@ Write new markdown articles or notes, build the Astro static project, and deploy
    edgeone pages deploy
    ```
    *If prompted, confirm the upload of the `dist/` directory.*
-- ✅ Success: The CLI output confirms a successful upload and provides the deployment preview or production URL.
-- 🔄 Fallback:
+- ✅ **Success**: The CLI output confirms a successful upload and provides the deployment preview or production URL.
+- 🔄 **Fallback**:
   - If deployment fails due to unauthorized access, run `edgeone login` again to refresh credentials.
   - If it fails due to incorrect output folder settings, review the `edgeone.json` configuration file in the project root and ensure the static output path is correctly set to `dist`.
 

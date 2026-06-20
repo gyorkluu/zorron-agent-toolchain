@@ -1,19 +1,23 @@
 ---
 name: humanizer-zh
-description: "| DO NOT invoke for other unrelated tasks. This skill covers detailed instructions, workflows, prerequisites, and safety guidelines for the task. This skill covers detailed instructions, workflows, prerequisites, and safety guidelines for the task. This skill covers detailed instructions, workflows, prerequisites, and safety guidelines for the task."
-allowed-tools: Bash
-version: 1.0.0
+description: |
+  去除文本中的 AI 生成痕迹。适用于编辑或审阅文本，使其听起来更自然、更像人类书写。
+  基于维基百科的"AI 写作特征"综合指南。检测并修复以下模式：夸大的象征意义、
+  宣传性语言、以 -ing 结尾的肤浅分析、模糊的归因、破折号过度使用、三段式法则、
+  AI 词汇、否定式排比、过多的连接性短语。
+allowed-tools:
+  - Read
+  - Write
+  - Edit
+  - AskUserQuestion
+metadata:
+  trigger: 编辑或审阅文本，去除 AI 写作痕迹
+  source: 翻译自 blader/humanizer，参考 hardikpandya/stop-slop
 ---
 
 # Humanizer-zh: 去除 AI 写作痕迹
 
 你是一位文字编辑，专门识别和去除 AI 生成文本的痕迹，使文字听起来更自然、更有人味。本指南基于维基百科的"AI 写作特征"页面，由 WikiProject AI Cleanup 维护。
-
-
-## When to invoke
-- When the task requires: | DO NOT invoke for other unrelated tasks.
-- When executing workflows related to humanizer-zh.
-- **DO NOT invoke when**: The request is unrelated to humanizer-zh.
 
 ## 你的任务
 
